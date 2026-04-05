@@ -83,7 +83,7 @@ const VehiclesPage = () => {
       />
       <div className="p-6 space-y-6">
         {/* Search */}
-        <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-3">
           <div className="flex-1 min-w-[200px] flex items-center bg-secondary rounded-lg px-4 py-2.5">
             <Search className="w-4 h-4 text-muted-foreground mr-2" />
             <input className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none" placeholder="Search by make, model, stock #…" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
