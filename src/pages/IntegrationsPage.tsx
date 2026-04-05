@@ -15,7 +15,7 @@ import { INTEGRATION_DEFINITIONS, integrationManager } from "@/services/integrat
 
 // ─── Icon mapping ───────────────────────────────────────────────────────────
 
-const iconMap: Record<string, any> = {
+const iconMap: Record<string, unknown> = {
   Bot, Phone, MessageSquare, Globe, Instagram, Facebook,
   Database, Car, Mail, Calendar, Settings, Link2, Webhook, Mic, Search, Shield,
 };

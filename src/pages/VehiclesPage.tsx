@@ -208,7 +208,7 @@ const VehiclesPage = () => {
           <TabsContent value="inventory" className="mt-4">
             <div className="grid gap-3">
               {filtered.map((v) => (
-                <div key={v.id} className={`flex items-center justify-between p-4 rounded-lg bg-card border transition-colors ${compareIds.includes(v.id) ? 'border-gold/40 bg-gold/5' : 'border-border hover:border-gold/20'}`}>
+                <div key={v.id} className={`flex items-center justify-between p-4 rounded-lg bg-card border hover-lift smooth-transition ${compareIds.includes(v.id) ? 'border-gold/40 bg-gold/5' : 'border-border hover:border-gold/20'}`}>
                   <div className="flex items-center gap-4">
                     {getVehicleImage(v.id) ? (
                       <img src={getVehicleImage(v.id)} alt={`${v.year} ${v.make} ${v.model}`} className="w-20 h-14 rounded-lg object-cover" loading="lazy" />

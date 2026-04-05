@@ -20,6 +20,10 @@ export const demoVehicles: Vehicle[] = [
   { id: 'veh-6', stock: 'T-5120', year: 2024, make: 'Toyota', model: 'Camry', trim: 'SE', body: 'Sedan', exteriorColor: 'Midnight Black', mileage: 'New', price: 33200, msrp: 34500, status: 'available', features: ['Dynamic Force Engine', 'Toyota Safety Sense', 'Sport Suspension', 'Dual Exhaust'], inventorySource: 'vauto', daysOnLot: 18, estimatedPayment: 425 },
   { id: 'veh-7', stock: 'N-8842', year: 2023, make: 'Nissan', model: 'Rogue', trim: 'SV Premium', body: 'SUV', exteriorColor: 'Champagne Silver', mileage: '19,800 km', price: 31200, status: 'available', features: ['ProPILOT Assist', 'Panoramic Sunroof', 'Quilted Leather', 'Bose Audio'], inventorySource: 'feed', daysOnLot: 30, estimatedPayment: 399 },
   { id: 'veh-8', stock: 'K-6631', year: 2024, make: 'Kia', model: 'Sportage', trim: 'X-Line AWD', body: 'SUV', exteriorColor: 'Dawning Red', mileage: 'New', price: 40900, msrp: 42500, status: 'hold', features: ['Dual Panoramic Display', 'Highway Driving Assist 2', 'Harman Kardon Audio', 'Digital Key 2.0'], inventorySource: 'vauto', daysOnLot: 5, estimatedPayment: 529 },
+  { id: 'veh-9', stock: 'J-1029', vin: '1C4HJXEN4PW001234', year: 2024, make: 'Jeep', model: 'Wrangler', trim: 'Rubicon', body: 'SUV', exteriorColor: 'Firecracker Red', mileage: 'New', price: 62500, msrp: 65000, status: 'available', features: ['4x4', 'Hardtop', 'Off-Road Tires', 'Winch'], inventorySource: 'vauto', daysOnLot: 3, estimatedPayment: 899 },
+  { id: 'veh-10', stock: 'M-5532', vin: '1FATP8FF0N5123456', year: 2023, make: 'Ford', model: 'Mustang', trim: 'GT Premium', body: 'Coupe', exteriorColor: 'Rapid Red', mileage: '15,000 km', price: 48900, status: 'available', features: ['V8 Engine', 'Leather Seats', 'B&O Sound System'], inventorySource: 'manual', daysOnLot: 45, estimatedPayment: 750 },
+  { id: 'veh-11', stock: 'T-8821', vin: '5YJ3E1EA5NF123456', year: 2023, make: 'Tesla', model: 'Model 3', trim: 'Long Range', body: 'Sedan', exteriorColor: 'Pearl White', mileage: '22,000 km', price: 42000, status: 'available', features: ['Autopilot', 'Premium Interior', 'Long Range Battery'], inventorySource: 'vauto', daysOnLot: 12, estimatedPayment: 620 },
+  { id: 'veh-12', stock: 'C-9912', vin: '1G1YB2D47P5123456', year: 2024, make: 'Chevrolet', model: 'Corvette', trim: 'Stingray 2LT', body: 'Coupe', exteriorColor: 'Torch Red', mileage: 'New', price: 89900, msrp: 92000, status: 'available', features: ['Z51 Performance Package', 'GT2 Bucket Seats', 'Performance Exhaust'], inventorySource: 'vauto', daysOnLot: 2, estimatedPayment: 1250 },
 ];
 
 const mkMsg = (id: string, convId: string, role: 'customer' | 'agent' | 'system', content: string, time: string, ai = role === 'agent'): Message => ({
@@ -101,6 +105,9 @@ export const demoQuotes: Quote[] = [
   ]},
   { id: 'quote-4', quoteNumber: 'Q-0990', leadId: 'lead-5', vehicleIds: ['veh-3'], status: 'viewed', revision: 1, disclosureIncluded: true, createdAt: '2026-04-04T12:00:00Z', sentAt: '2026-04-04T12:30:00Z', viewedAt: '2026-04-05T10:45:00Z', scenarios: [
     { id: 'qs-4a', quoteId: 'quote-4', label: 'Tucson Preferred — 72 months', vehicleId: 'veh-3', vehicleSummary: '2024 Hyundai Tucson Preferred AWD', sellingPrice: 34500, downPayment: 2000, tradeInValue: 0, termMonths: 72, interestRate: 5.49, monthlyPayment: 508, biweeklyPayment: 234, totalCost: 36576, taxes: 4225, fees: 499 },
+  ]},
+  { id: 'quote-5', quoteNumber: 'Q-1005', leadId: 'lead-3', vehicleIds: ['veh-10'], status: 'draft', revision: 1, disclosureIncluded: true, createdAt: '2026-04-05T15:00:00Z', scenarios: [
+    { id: 'qs-5a', quoteId: 'quote-5', label: 'Mustang GT — 60 months', vehicleId: 'veh-10', vehicleSummary: '2023 Ford Mustang GT Premium', sellingPrice: 48900, downPayment: 10000, tradeInValue: 0, termMonths: 60, interestRate: 6.99, monthlyPayment: 769, biweeklyPayment: 355, totalCost: 46140, taxes: 6357, fees: 599 },
   ]},
 ];
 
