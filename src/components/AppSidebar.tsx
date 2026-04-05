@@ -47,14 +47,8 @@ const AppSidebar = ({ onNavigate }: { onNavigate?: () => void }) => {
   return (
     <aside className="flex flex-col w-[220px] min-h-screen bg-sidebar border-r border-sidebar-border">
       {/* Logo Area */}
-      <div className="flex items-center gap-3 px-5 py-5 border-b border-sidebar-border">
-        <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-gold/10 border border-gold/20">
-          <Zap className="w-5 h-5 text-gold" />
-        </div>
-        <div className="flex flex-col">
-          <span className="text-sm font-semibold text-foreground tracking-tight">Door Step Auto</span>
-          <span className="text-[10px] text-muted-foreground tracking-wide uppercase">AI Sales Agent</span>
-        </div>
+      <div className="flex items-center justify-center px-5 py-5 border-b border-sidebar-border">
+        <img src="/logo.jpg" alt="Door Step Auto" className="h-12 w-auto object-contain rounded-md" />
       </div>
 
       {/* Navigation */}

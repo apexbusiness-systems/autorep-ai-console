@@ -33,8 +33,8 @@ const AppLayout = ({ children }: AppLayoutProps) => {
               <AppSidebar onNavigate={() => setOpen(false)} />
             </SheetContent>
           </Sheet>
-          <div className="flex flex-col">
-            <span className="text-sm font-semibold text-foreground tracking-tight">Door Step Auto</span>
+          <div className="flex items-center">
+            <img src="/logo.jpg" alt="Door Step Auto" className="h-8 w-auto object-contain rounded-sm" />
           </div>
         </header>
 
