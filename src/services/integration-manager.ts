@@ -21,27 +21,15 @@ export interface IntegrationDefinition {
 
 export const INTEGRATION_DEFINITIONS: IntegrationDefinition[] = [
   {
-    id: 'grok',
-    name: 'Grok (xAI)',
-    provider: 'xai',
+    id: 'groq',
+    name: 'Groq',
+    provider: 'groq',
     category: 'ai',
-    description: 'Primary AI model for reasoning, conversation, and sales intelligence',
+    description: 'Ultra-fast LPU inference for AI agent conversations and reasoning',
     icon: 'Bot',
     fields: [
-      { key: 'apiKey', label: 'API Key', placeholder: 'xai-...', type: 'password' },
-      { key: 'modelId', label: 'Model ID', placeholder: 'grok-3', type: 'text' },
-    ],
-  },
-  {
-    id: 'perplexity',
-    name: 'Perplexity (Search)',
-    provider: 'perplexity',
-    category: 'ai',
-    description: 'AI-powered search for vehicle research, market data, and competitive pricing',
-    icon: 'Search',
-    fields: [
-      { key: 'apiKey', label: 'API Key', placeholder: 'pplx-...', type: 'password' },
-      { key: 'model', label: 'Model', placeholder: 'sonar-pro', type: 'text' },
+      { key: 'apiKey', label: 'API Key', placeholder: 'gsk_...', type: 'password' },
+      { key: 'modelId', label: 'Model ID', placeholder: 'llama-3.3-70b-versatile', type: 'text' },
     ],
   },
   {

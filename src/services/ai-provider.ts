@@ -1,12 +1,12 @@
 /**
  * AI Provider Service
  * Abstracts the LLM integration behind a clean service boundary.
- * Currently targets Grok (xAI) as the primary model provider.
+ * Primary target: Groq (groq.com) — ultra-fast LPU inference.
  * Drop in API keys via IntegrationConfig to activate.
  */
 
 export interface AIProviderConfig {
-  provider: 'grok' | 'openai' | 'anthropic';
+  provider: 'groq' | 'openai' | 'anthropic';
   apiKey: string;
   modelId: string;
   baseUrl?: string;
@@ -43,7 +43,7 @@ export interface NextBestAction {
   type: 'send_quote' | 'book_appointment' | 'follow_up' | 'send_vehicle' | 'escalate' | 'collect_info' | 'handle_objection';
 }
 
-const GROK_BASE_URL = 'https://api.x.ai/v1';
+const GROQ_BASE_URL = 'https://api.groq.com/openai/v1';
 
 const DEFAULT_SYSTEM_PROMPT = `You are an expert automotive sales AI agent for Door Step Auto. You help customers find their ideal vehicle, answer questions about inventory, build quotes, handle objections professionally, and guide them through the purchase process. Be warm, professional, knowledgeable, and consultative. Never make claims about financing approval. Always disclose you are an AI when asked.`;
 
@@ -59,7 +59,7 @@ class AIProviderService {
   }
 
   getProviderName(): string {
-    return this.config?.provider || 'grok';
+    return this.config?.provider || 'groq';
   }
 
   async complete(request: AICompletionRequest): Promise<AICompletionResponse> {
@@ -68,7 +68,7 @@ class AIProviderService {
       return this.demoComplete(request);
     }
 
-    const baseUrl = this.config.baseUrl || (this.config.provider === 'grok' ? GROK_BASE_URL : 'https://api.openai.com/v1');
+    const baseUrl = this.config.baseUrl || (this.config.provider === 'groq' ? GROQ_BASE_URL : 'https://api.openai.com/v1');
 
     const response = await fetch(`${baseUrl}/chat/completions`, {
       method: 'POST',
