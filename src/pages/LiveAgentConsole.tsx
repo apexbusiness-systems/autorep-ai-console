@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { getVehicleImage } from "@/data/vehicle-images";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
 import StatusBadge from "@/components/StatusBadge";
