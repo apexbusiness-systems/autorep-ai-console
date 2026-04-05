@@ -83,18 +83,18 @@ const VehiclesPage = () => {
       />
       <div className="p-6 space-y-6">
         {/* Search */}
-        <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-3">
           <div className="flex-1 min-w-[200px] flex items-center bg-secondary rounded-lg px-4 py-2.5">
             <Search className="w-4 h-4 text-muted-foreground mr-2" />
             <input className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none" placeholder="Search by make, model, stock #…" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
           </div>
-          <select className="bg-secondary text-sm text-foreground rounded-lg px-3 py-2.5 border border-border outline-none" value={bodyFilter} onChange={e => setBodyFilter(e.target.value)}>
+          <select className="bg-secondary text-sm text-foreground rounded-lg px-3 py-2.5 border border-border outline-none shrink-0 w-auto" value={bodyFilter} onChange={e => setBodyFilter(e.target.value)}>
             <option>All</option><option>SUV</option><option>Truck</option><option>Sedan</option>
           </select>
-          <select className="bg-secondary text-sm text-foreground rounded-lg px-3 py-2.5 border border-border outline-none" value={budgetFilter} onChange={e => setBudgetFilter(e.target.value)}>
+          <select className="bg-secondary text-sm text-foreground rounded-lg px-3 py-2.5 border border-border outline-none shrink-0 w-auto" value={budgetFilter} onChange={e => setBudgetFilter(e.target.value)}>
             <option>Any</option><option>Under $25K</option><option>$25K–$35K</option><option>$35K–$50K</option><option>$50K+</option>
           </select>
-          <select className="bg-secondary text-sm text-foreground rounded-lg px-3 py-2.5 border border-border outline-none" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
+          <select className="bg-secondary text-sm text-foreground rounded-lg px-3 py-2.5 border border-border outline-none shrink-0 w-auto" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
             <option>All</option><option>Available</option><option>Hold</option><option>Incoming</option>
           </select>
         </div>

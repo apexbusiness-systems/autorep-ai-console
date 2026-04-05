@@ -222,7 +222,7 @@ const PacketCard = ({ packet, customerName, expanded, onToggle }: {
           </div>
 
           <div className="space-y-1">
-            <span className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider">Blockers</span>
+            <span className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider block">Blockers</span>
             {packet.blockers.length === 0 ? (
               <span className="text-xs text-green-400">None</span>
             ) : (
