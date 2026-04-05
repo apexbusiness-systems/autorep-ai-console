@@ -7,9 +7,10 @@ import {
   FileText,
   Shield,
   Settings,
-  Bot,
+  Zap,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
+import { useConversations, useEscalations, useLeads } from "@/hooks/use-store";
 
 const navItems = [
   { to: "/", icon: Headphones, label: "Live Agent" },
@@ -23,17 +24,35 @@ const navItems = [
 
 const AppSidebar = () => {
   const location = useLocation();
+  const conversations = useConversations();
+  const escalations = useEscalations();
+  const leads = useLeads();
+
+  const activeConvos = conversations.filter(c => c.status === 'active').length;
+  const openEscalations = escalations.filter(e => e.status === 'open').length;
+  const hotLeads = leads.filter(l => l.priority === 'hot').length;
+
+  const getBadge = (to: string): number | null => {
+    if (to === '/' && activeConvos > 0) return activeConvos;
+    if (to === '/conversations') {
+      const unread = conversations.reduce((sum, c) => sum + c.unreadCount, 0);
+      return unread > 0 ? unread : null;
+    }
+    if (to === '/leads' && hotLeads > 0) return hotLeads;
+    if (to === '/manager' && openEscalations > 0) return openEscalations;
+    return null;
+  };
 
   return (
     <aside className="flex flex-col w-[220px] min-h-screen bg-sidebar border-r border-sidebar-border">
       {/* Logo Area */}
       <div className="flex items-center gap-3 px-5 py-5 border-b border-sidebar-border">
-        <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-gold/10">
-          <Bot className="w-5 h-5 text-gold" />
+        <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-gold/10 border border-gold/20">
+          <Zap className="w-5 h-5 text-gold" />
         </div>
         <div className="flex flex-col">
-          <span className="text-sm font-semibold text-foreground tracking-tight">AutoRep AI</span>
-          <span className="text-[10px] text-muted-foreground tracking-wide uppercase">Door Step Auto</span>
+          <span className="text-sm font-semibold text-foreground tracking-tight">Door Step Auto</span>
+          <span className="text-[10px] text-muted-foreground tracking-wide uppercase">AI Sales Agent</span>
         </div>
       </div>
 
@@ -41,6 +60,7 @@ const AppSidebar = () => {
       <nav className="flex-1 flex flex-col gap-0.5 px-3 py-4">
         {navItems.map((item) => {
           const isActive = location.pathname === item.to;
+          const badge = getBadge(item.to);
           return (
             <NavLink
               key={item.to}
@@ -52,18 +72,32 @@ const AppSidebar = () => {
                   : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-foreground"
               )}
             >
-              <item.icon className={cn("w-4 h-4", isActive && "text-gold")} />
-              {item.label}
+              <item.icon className={cn("w-4 h-4 flex-shrink-0", isActive && "text-gold")} />
+              <span className="flex-1">{item.label}</span>
+              {badge !== null && (
+                <span className={cn(
+                  "min-w-[18px] h-[18px] rounded-full text-[10px] font-bold flex items-center justify-center",
+                  item.to === '/manager'
+                    ? "bg-red-500/20 text-red-400"
+                    : "bg-gold/15 text-gold"
+                )}>
+                  {badge}
+                </span>
+              )}
             </NavLink>
           );
         })}
       </nav>
 
       {/* Footer */}
-      <div className="px-5 py-4 border-t border-sidebar-border">
+      <div className="px-5 py-4 border-t border-sidebar-border space-y-2">
         <div className="flex items-center gap-2">
           <span className="status-dot status-active" />
-          <span className="text-xs text-muted-foreground">Agent Online</span>
+          <span className="text-xs text-muted-foreground">AI Agent Online</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-gold/50" />
+          <span className="text-[10px] text-muted-foreground">Supabase Connected</span>
         </div>
       </div>
     </aside>
