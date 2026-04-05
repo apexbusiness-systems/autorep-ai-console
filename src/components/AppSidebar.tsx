@@ -10,6 +10,7 @@ import {
   Zap,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
+import { ThemeToggle } from "./ThemeToggle";
 import { useConversations, useEscalations, useLeads } from "@/hooks/use-store";
 
 const navItems = [
@@ -22,7 +23,7 @@ const navItems = [
   { to: "/integrations", icon: Settings, label: "Integrations" },
 ];
 
-const AppSidebar = () => {
+const AppSidebar = ({ onNavigate }: { onNavigate?: () => void }) => {
   const location = useLocation();
   const conversations = useConversations();
   const escalations = useEscalations();
@@ -65,6 +66,7 @@ const AppSidebar = () => {
             <NavLink
               key={item.to}
               to={item.to}
+              onClick={onNavigate}
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150",
                 isActive
@@ -72,10 +74,12 @@ const AppSidebar = () => {
                   : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-foreground"
               )}
             >
-              <item.icon className={cn("w-4 h-4 flex-shrink-0", isActive && "text-gold")} />
+              <item.icon onClick={onNavigate}
+              className={cn("w-4 h-4 flex-shrink-0", isActive && "text-gold")} />
               <span className="flex-1">{item.label}</span>
               {badge !== null && (
-                <span className={cn(
+                <span onClick={onNavigate}
+              className={cn(
                   "min-w-[18px] h-[18px] rounded-full text-[10px] font-bold flex items-center justify-center",
                   item.to === '/manager'
                     ? "bg-red-500/20 text-red-400"
@@ -98,6 +102,10 @@ const AppSidebar = () => {
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-gold/50" />
           <span className="text-[10px] text-muted-foreground">Supabase Connected</span>
+        </div>
+        <div className="flex items-center justify-between pt-2 border-t border-sidebar-border">
+          <span className="text-xs text-muted-foreground">Theme</span>
+          <ThemeToggle />
         </div>
       </div>
     </aside>
