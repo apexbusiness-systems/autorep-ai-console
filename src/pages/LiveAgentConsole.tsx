@@ -321,6 +321,9 @@ const LiveAgentConsole = () => {
                 <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Matched Vehicles</h4>
                 {matchedVehicles.map((v) => (
                   <div key={v.id} className="p-3 rounded-lg bg-secondary/50 border border-border space-y-2">
+                    {getVehicleImage(v.id) && (
+                      <img src={getVehicleImage(v.id)} alt={`${v.year} ${v.make} ${v.model}`} className="w-full h-24 rounded-md object-cover" loading="lazy" />
+                    )}
                     <div className="flex justify-between items-start">
                       <div>
                         <p className="text-sm font-medium text-foreground">{v.year} {v.make} {v.model} {v.trim}</p>

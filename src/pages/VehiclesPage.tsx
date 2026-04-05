@@ -210,9 +210,13 @@ const VehiclesPage = () => {
               {filtered.map((v) => (
                 <div key={v.id} className={`flex items-center justify-between p-4 rounded-lg bg-card border transition-colors ${compareIds.includes(v.id) ? 'border-gold/40 bg-gold/5' : 'border-border hover:border-gold/20'}`}>
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-lg bg-secondary flex items-center justify-center">
-                      <Car className="w-6 h-6 text-muted-foreground" />
-                    </div>
+                    {getVehicleImage(v.id) ? (
+                      <img src={getVehicleImage(v.id)} alt={`${v.year} ${v.make} ${v.model}`} className="w-20 h-14 rounded-lg object-cover" loading="lazy" />
+                    ) : (
+                      <div className="w-20 h-14 rounded-lg bg-secondary flex items-center justify-center">
+                        <Car className="w-6 h-6 text-muted-foreground" />
+                      </div>
+                    )}
                     <div>
                       <p className="text-sm font-semibold text-foreground">{v.year} {v.make} {v.model} {v.trim}</p>
                       <div className="flex items-center gap-3 mt-0.5">
