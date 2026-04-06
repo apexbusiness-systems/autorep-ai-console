@@ -23,7 +23,7 @@ serve(async (req) => {
 
     // Validate phone number format
     const phoneRegex = /^\+?[1-9]\d{1,14}$/;
-    const cleanPhone = to.replace(/[\s\-\(\)]/g, "");
+    const cleanPhone = to.replace(/[\s\-()]/g, "");
     if (!phoneRegex.test(cleanPhone)) {
       return new Response(
         JSON.stringify({ error: "Invalid phone number format" }),

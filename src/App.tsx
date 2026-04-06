@@ -19,6 +19,7 @@ import FinancePage from "./pages/FinancePage";
 import ManagerPage from "./pages/ManagerPage";
 import IntegrationsPage from "./pages/IntegrationsPage";
 import NotFound from "./pages/NotFound";
+import { VoiceTestingPanel } from "@/components/VoiceTestingPanel";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +49,7 @@ const App = () => (
       <StoreInitializer />
       <Toaster />
       <Sonner />
+      <VoiceTestingPanel />
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<LiveAgentConsole />} />
