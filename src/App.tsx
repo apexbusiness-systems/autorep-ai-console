@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -11,6 +11,8 @@ import {
   demoQuotes, demoFollowUpTasks, demoFinancePackets,
   demoAppointments, demoAuditEvents, demoEscalations,
 } from "@/data/seed";
+import SplashScreen from "@/components/SplashScreen";
+import DemoSimulator from "@/components/DemoSimulator";
 import LiveAgentConsole from "./pages/LiveAgentConsole";
 import ConversationsPage from "./pages/ConversationsPage";
 import LeadsPage from "./pages/LeadsPage";
@@ -42,29 +44,43 @@ function StoreInitializer() {
   return null;
 }
 
-const App = () => (
-  <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-    <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <StoreInitializer />
-      <Toaster />
-      <Sonner />
-      <VoiceTestingPanel />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<LiveAgentConsole />} />
-          <Route path="/conversations" element={<ConversationsPage />} />
-          <Route path="/leads" element={<LeadsPage />} />
-          <Route path="/vehicles" element={<VehiclesPage />} />
-          <Route path="/finance" element={<FinancePage />} />
-          <Route path="/manager" element={<ManagerPage />} />
-          <Route path="/integrations" element={<IntegrationsPage />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-  </ThemeProvider>
-);
+const App = () => {
+  const [splashDone, setSplashDone] = useState(false);
+  const handleSplashComplete = useCallback(() => setSplashDone(true), []);
+
+  return (
+    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+      <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <StoreInitializer />
+        <Toaster />
+        <Sonner />
+
+        {/* Splash Screen — shown once on cold load */}
+        {!splashDone && <SplashScreen onComplete={handleSplashComplete} />}
+
+        {/* Demo Simulator — Ctrl+Shift+D to toggle */}
+        <DemoSimulator />
+
+        {/* Voice Testing Panel — renders its own route-aware visibility */}
+        <VoiceTestingPanel />
+
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<LiveAgentConsole />} />
+            <Route path="/conversations" element={<ConversationsPage />} />
+            <Route path="/leads" element={<LeadsPage />} />
+            <Route path="/vehicles" element={<VehiclesPage />} />
+            <Route path="/finance" element={<FinancePage />} />
+            <Route path="/manager" element={<ManagerPage />} />
+            <Route path="/integrations" element={<IntegrationsPage />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+    </ThemeProvider>
+  );
+};
 
 export default App;
