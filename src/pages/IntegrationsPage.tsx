@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
 import StatusBadge from "@/components/StatusBadge";
@@ -15,7 +15,7 @@ import { INTEGRATION_DEFINITIONS, integrationManager } from "@/services/integrat
 
 // ─── Icon mapping ───────────────────────────────────────────────────────────
 
-const iconMap: Record<string, unknown> = {
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Bot, Phone, MessageSquare, Globe, Instagram, Facebook,
   Database, Car, Mail, Calendar, Settings, Link2, Webhook, Mic, Search, Shield,
 };
