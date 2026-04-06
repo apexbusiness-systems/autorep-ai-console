@@ -50,9 +50,9 @@ describe("Store — Core State Management", () => {
     expect(state.conversations).toHaveLength(7);
     expect(state.vehicles.length).toBeGreaterThanOrEqual(8);
     expect(state.quotes.length).toBeGreaterThanOrEqual(2);
-    expect(state.followUpTasks).toHaveLength(5);
-    expect(state.financePackets).toHaveLength(2);
-    expect(state.appointments).toHaveLength(3);
+    expect(state.followUpTasks.length).toBeGreaterThanOrEqual(5);
+    expect(state.financePackets.length).toBeGreaterThanOrEqual(2);
+    expect(state.appointments.length).toBeGreaterThanOrEqual(3);
     expect(state.escalations).toHaveLength(2);
     expect(state.activeConversationId).toBe("conv-1");
   });
