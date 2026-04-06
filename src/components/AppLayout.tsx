@@ -20,7 +20,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
       </div>
 
       {/* Mobile Sidebar & Header */}
-      <div className="flex flex-col flex-1 w-full overflow-hidden">
+      <div className="flex flex-col flex-1 w-full overflow-hidden relative">
         <header className="flex md:hidden items-center p-4 border-b border-sidebar-border bg-sidebar shrink-0">
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
@@ -38,7 +38,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
           </div>
         </header>
 
-        <main className="flex-1 overflow-auto w-full">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto w-full bg-background scroll-smooth">
           {children}
         </main>
       </div>
