@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
 import StatusBadge from "@/components/StatusBadge";
@@ -607,20 +607,26 @@ const LeadsPage = () => {
   );
 
   // Search filtering
-  const filterBySearch = (list: Lead[]) => {
-    if (!searchQuery.trim()) return list;
-    const q = searchQuery.toLowerCase();
-    return list.filter(
-      (l) =>
-        l.name.toLowerCase().includes(q) ||
-        l.phone.includes(q) ||
-        (SOURCE_LABELS[l.source] ?? l.source).toLowerCase().includes(q)
-    );
-  };
+  // ⚡ Bolt Performance Optimization: Memoized array filter operations
+  // Prevents running search filter multiple times on every render (e.g., when switching tabs)
+  // Expected impact: Eliminates O(N) recalculations on unrelated state changes
+  const filterBySearch = useCallback(
+    (list: Lead[]) => {
+      if (!searchQuery.trim()) return list;
+      const q = searchQuery.toLowerCase();
+      return list.filter(
+        (l) =>
+          l.name.toLowerCase().includes(q) ||
+          l.phone.includes(q) ||
+          (SOURCE_LABELS[l.source] ?? l.source).toLowerCase().includes(q)
+      );
+    },
+    [searchQuery]
+  );
 
-  const filteredAll = filterBySearch(leads);
-  const filteredHot = filterBySearch(hotLeads);
-  const filteredStale = filterBySearch(staleLeads);
+  const filteredAll = useMemo(() => filterBySearch(leads), [filterBySearch, leads]);
+  const filteredHot = useMemo(() => filterBySearch(hotLeads), [filterBySearch, hotLeads]);
+  const filteredStale = useMemo(() => filterBySearch(staleLeads), [filterBySearch, staleLeads]);
 
   const handleSelectLead = (id: string) => {
     setActiveLead(id);

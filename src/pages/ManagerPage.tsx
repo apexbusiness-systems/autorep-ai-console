@@ -880,15 +880,20 @@ const ManagerPage = () => {
   const [activeTab, setActiveTab] = useState("live");
 
   // Computed counts
-  const activeAiCount = conversations.filter(
+  // ⚡ Bolt Performance Optimization: Memoized expensive array filter operations
+  // Prevents recalculating these counts on every render (e.g., when switching tabs)
+  // Expected impact: Eliminates O(N) recalculations on unrelated state changes
+  const activeAiCount = useMemo(() => conversations.filter(
     (c) => c.currentHandler === "ai" && c.status === "active"
-  ).length;
-  const humanHandledCount = conversations.filter(
+  ).length, [conversations]);
+
+  const humanHandledCount = useMemo(() => conversations.filter(
     (c) => c.currentHandler === "human"
-  ).length;
-  const openEscalationCount = escalations.filter(
+  ).length, [conversations]);
+
+  const openEscalationCount = useMemo(() => escalations.filter(
     (e) => e.status === "open"
-  ).length;
+  ).length, [escalations]);
 
   const handleViewTranscript = (conversationId: string) => {
     setSelectedConversationId(conversationId);
