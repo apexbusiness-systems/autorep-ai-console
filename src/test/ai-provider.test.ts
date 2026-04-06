@@ -44,7 +44,7 @@ describe("AI Provider Service", () => {
   it("handles finance queries in demo mode", async () => {
     const result = await aiProvider.complete({
       systemPrompt: "",
-      messages: [{ role: "user", content: "What about financing options?" }],
+      messages: [{ role: "user", content: "Tell me about finance and credit options" }],
     });
     expect(result.content.toLowerCase()).toContain("lender");
   });

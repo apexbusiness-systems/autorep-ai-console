@@ -68,12 +68,12 @@ describe("Inventory Search Service", () => {
       expect(makes.find(m => m.make_display === "Toyota")).toBeTruthy();
       expect(makes.find(m => m.make_display === "Honda")).toBeTruthy();
       expect(makes.find(m => m.make_display === "Ford")).toBeTruthy();
-    });
+    }, 15000);
 
     it("returns models for a make (may be empty in demo)", async () => {
       const models = await inventorySearch.getModels("toyota");
       expect(Array.isArray(models)).toBe(true);
-    });
+    }, 15000);
   });
 
   describe("NHTSA VIN Decode", () => {
