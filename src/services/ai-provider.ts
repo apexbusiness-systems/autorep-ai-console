@@ -177,18 +177,37 @@ class AIProviderService {
     return result.content;
   }
 
-  private async demoComplete(request: AICompletionRequest): Promise<AICompletionResponse> {
+    private async demoComplete(request: AICompletionRequest): Promise<AICompletionResponse> {
     const lastUserMsg = [...request.messages].reverse().find(m => m.role === 'user')?.content || '';
+    const lastUserMsgLower = lastUserMsg.toLowerCase();
+
+    // Determine if it's a voice call context
+    const isVoice = request.systemPrompt.includes("voice") || request.messages.some(m => m.content.toLowerCase().includes("call"));
+
+    // Fillers for more natural voice
+    const fillers = isVoice ? ["Um, ", "Let me see... ", "Ah, ", "Well, "] : [""];
+    const randomFiller = () => fillers[Math.floor(Math.random() * fillers.length)];
+
     let response = "I'd be happy to help you find the perfect vehicle! Could you tell me more about what you're looking for?";
 
-    if (lastUserMsg.toLowerCase().includes('price') || lastUserMsg.toLowerCase().includes('cost') || lastUserMsg.toLowerCase().includes('payment')) {
-      response = "Great question about pricing! Let me pull up some payment scenarios for you. With our current programs, I can show you options that work within your budget. Would you like me to build a detailed quote?";
-    } else if (lastUserMsg.toLowerCase().includes('trade')) {
-      response = "We'd love to look at your trade-in! To give you the most accurate value, could you share the year, make, model, and approximate mileage? I can have a preliminary estimate for you right away.";
-    } else if (lastUserMsg.toLowerCase().includes('test drive') || lastUserMsg.toLowerCase().includes('see it')) {
+    if (lastUserMsgLower.includes('price') || lastUserMsgLower.includes('cost') || lastUserMsgLower.includes('payment') || lastUserMsgLower.includes('expensive')) {
+      response = randomFiller() + "Great question about pricing! Let me pull up some payment scenarios for you. With our current programs, I can show you options that work within your budget. Would you like me to build a detailed quote?";
+    } else if (lastUserMsgLower.includes('trade') || lastUserMsgLower.includes('selling')) {
+      response = randomFiller() + "We'd love to look at your trade-in! To give you the most accurate value, could you share the year, make, model, and approximate mileage? I can have a preliminary estimate for you right away.";
+    } else if (lastUserMsgLower.includes('test drive') || lastUserMsgLower.includes('see it') || lastUserMsgLower.includes('come in')) {
       response = "Absolutely! I can get you booked for a test drive. What day and time works best for you this week? We have availability throughout the day.";
-    } else if (lastUserMsg.toLowerCase().includes('finance') || lastUserMsg.toLowerCase().includes('credit')) {
-      response = "We work with multiple lenders to find the best rates available. I can start a quick pre-qualification for you — it's a soft inquiry that won't affect your credit score. Would you like to proceed?";
+    } else if (lastUserMsgLower.includes('finance') || lastUserMsgLower.includes('credit') || lastUserMsgLower.includes('loan')) {
+      response = randomFiller() + "We work with multiple lenders to find the best rates available. I can start a quick pre-qualification for you. It's a soft inquiry that won't affect your credit score. Would you like to proceed with that?";
+    } else if (lastUserMsgLower.includes('hello') || lastUserMsgLower.includes('hi') || lastUserMsgLower.includes('hey')) {
+      response = "Hi there! I'm Alex from Door Step Auto. How can I help you today?";
+    } else if (lastUserMsgLower.includes('human') || lastUserMsgLower.includes('robot') || lastUserMsgLower.includes('ai') || lastUserMsgLower.includes('real person')) {
+      response = "I am an AI assistant here at Door Step Auto, but I'm fully equipped to help you with inventory, pricing, and booking appointments. If you need to speak with a human manager, I can certainly get one for you. How would you like to proceed?";
+    } else if (lastUserMsgLower.includes('yes') || lastUserMsgLower.includes('sure') || lastUserMsgLower.includes('okay')) {
+      response = "Perfect! Let me get that sorted out for you right now. Just a moment.";
+    } else if (lastUserMsgLower.includes('no') || lastUserMsgLower.includes('not really')) {
+      response = "No problem at all. Is there anything else I can help you with today?";
+    } else if (lastUserMsgLower.includes('bye') || lastUserMsgLower.includes('goodbye')) {
+      response = "Thanks for reaching out to Door Step Auto! Have a wonderful day.";
     }
 
     return {

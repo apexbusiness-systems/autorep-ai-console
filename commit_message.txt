@@ -1,8 +1,5 @@
-chore: fix investor pilot run preparations
+feat: add voice testing panel and mock voice agent
 
-- Replaced `lovable-agent-playwright-config` with a standard `playwright.config.ts`.
-- Disabled the `react-refresh/only-export-components` ESLint rule to suppress fast refresh warnings on UI components (common for shadcn/ui components).
-- Added an initial Playwright test to verify the app runs.
-- Updated `browserslist` db by running `npm update-browserslist-db@latest` via `bun install caniuse-lite@latest browserslist@latest` to fix build warnings.
-- Ran pre-commit checks, type-checking, and tests successfully.
-- Made sure `.gitignore` ignores playwright reports.
+- Created MockVoiceAgent that leverages the browser's Web Speech API to test text-to-speech and speech-to-text.
+- Added VoiceTestingPanel component injected into App.tsx for sandbox testing of voice quality, latency, and mock conversations.
+- Enhanced ai-provider's demo mode with natural language fillers and better handling of automotive-specific inquiries to simulate voice calls.
