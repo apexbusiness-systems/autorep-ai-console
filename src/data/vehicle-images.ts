@@ -6,6 +6,10 @@ import equinox from '@/assets/vehicles/equinox-lt.jpg';
 import camry from '@/assets/vehicles/camry-se.jpg';
 import rogue from '@/assets/vehicles/rogue-sv.jpg';
 import sportage from '@/assets/vehicles/sportage-xline.jpg';
+import wrangler from '@/assets/vehicles/wrangler-rubicon.jpg';
+import mustang from '@/assets/vehicles/mustang-gt.jpg';
+import model3 from '@/assets/vehicles/model-3.jpg';
+import corvette from '@/assets/vehicles/corvette-stingray.jpg';
 
 export const vehicleImages: Record<string, string> = {
   'veh-1': rav4,
@@ -16,6 +20,10 @@ export const vehicleImages: Record<string, string> = {
   'veh-6': camry,
   'veh-7': rogue,
   'veh-8': sportage,
+  'veh-9': wrangler,
+  'veh-10': mustang,
+  'veh-11': model3,
+  'veh-12': corvette,
 };
 
 export function getVehicleImage(vehicleId: string): string {

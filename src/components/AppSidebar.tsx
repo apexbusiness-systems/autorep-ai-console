@@ -62,7 +62,7 @@ const AppSidebar = ({ onNavigate }: { onNavigate?: () => void }) => {
               to={item.to}
               onClick={onNavigate}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150",
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium smooth-transition hover:scale-[1.02]",
                 isActive
                   ? "bg-sidebar-accent text-gold"
                   : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-foreground"
