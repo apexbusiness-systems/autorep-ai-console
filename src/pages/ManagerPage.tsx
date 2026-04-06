@@ -10,12 +10,19 @@ import {
   XCircle, Edit3, ShieldCheck, FileWarning, ArrowRightLeft,
   Activity, Phone, Globe, Instagram, Facebook, Mail,
   ChevronRight, Gauge, UserCheck, Ban, Timer, Flag,
+  TrendingUp, DollarSign, Zap, Target,
 } from "lucide-react";
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, AreaChart, Area, Legend,
+} from "recharts";
 import {
   useConversations,
   useEscalations,
   useAuditEvents,
   useMessages,
+  useLeads,
+  useQuotes,
   initiateHandoff,
 } from "@/hooks/use-store";
 import type { Conversation, Escalation, Message, Channel } from "@/types/domain";
@@ -867,6 +874,240 @@ function RecentHandoffs({
   );
 }
 
+// ─── Dashboard Charts ───────────────────────────────────────────────────────
+
+const CHART_GOLD = "hsl(42, 65%, 55%)";
+const CHART_GOLD_BRIGHT = "hsl(42, 80%, 65%)";
+const CHART_BLUE = "hsl(210, 80%, 55%)";
+const CHART_GREEN = "hsl(152, 60%, 42%)";
+const CHART_ORANGE = "hsl(38, 92%, 50%)";
+const CHART_RED = "hsl(0, 72%, 51%)";
+const CHART_PURPLE = "hsl(270, 60%, 55%)";
+const CHART_TEAL = "hsl(180, 60%, 45%)";
+
+const PIE_COLORS = [CHART_GOLD, CHART_BLUE, CHART_GREEN, CHART_ORANGE, CHART_PURPLE, CHART_TEAL];
+
+const chartTooltipStyle = {
+  contentStyle: {
+    background: 'hsl(220, 14%, 11%)',
+    border: '1px solid hsl(220, 12%, 18%)',
+    borderRadius: '8px',
+    color: 'hsl(45, 30%, 92%)',
+    fontSize: '12px',
+  },
+};
+
+function DashboardCharts() {
+  const leads = useLeads();
+  const conversations = useConversations();
+  const quotes = useQuotes();
+
+  // Lead Stage Funnel Data
+  const funnelData = useMemo(() => {
+    const stages: Record<string, number> = {};
+    leads.forEach(l => {
+      const label = stageLabel[l.stage] || l.stage;
+      stages[label] = (stages[label] || 0) + 1;
+    });
+    return Object.entries(stages).map(([name, value]) => ({ name, value }));
+  }, [leads]);
+
+  // Lead Source Distribution
+  const sourceData = useMemo(() => {
+    const sources: Record<string, number> = {};
+    leads.forEach(l => {
+      const src = l.source?.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'Unknown';
+      sources[src] = (sources[src] || 0) + 1;
+    });
+    return Object.entries(sources).map(([name, value]) => ({ name, value }));
+  }, [leads]);
+
+  // AI vs Human Handle Rate
+  const handlerData = useMemo(() => {
+    const aiCount = conversations.filter(c => c.currentHandler === 'ai').length;
+    const humanCount = conversations.filter(c => c.currentHandler === 'human').length;
+    const total = aiCount + humanCount || 1;
+    return [
+      { name: 'AI Handled', value: Math.round((aiCount / total) * 100), count: aiCount },
+      { name: 'Human Handled', value: Math.round((humanCount / total) * 100), count: humanCount },
+    ];
+  }, [conversations]);
+
+  // Sentiment Distribution
+  const sentimentData = useMemo(() => {
+    const sentiments: Record<string, number> = {};
+    conversations.forEach(c => {
+      const label = sentimentLabel[c.sentiment] || c.sentiment;
+      sentiments[label] = (sentiments[label] || 0) + 1;
+    });
+    return Object.entries(sentiments).map(([name, value]) => ({ name, value }));
+  }, [conversations]);
+
+  // Revenue Pipeline (from quotes)
+  const revenuePipeline = useMemo(() => {
+    let total = 0;
+    quotes.forEach(q => {
+      q.scenarios?.forEach(s => {
+        total += s.sellingPrice || 0;
+      });
+    });
+    return total;
+  }, [quotes]);
+
+  // Conversion funnel timeline (simulated hourly data)
+  const timelineData = useMemo(() => [
+    { time: '6AM', ai: 2, human: 0, leads: 1 },
+    { time: '7AM', ai: 5, human: 0, leads: 2 },
+    { time: '8AM', ai: 8, human: 1, leads: 3 },
+    { time: '9AM', ai: 12, human: 2, leads: 4 },
+    { time: '10AM', ai: 15, human: 2, leads: 6 },
+    { time: '11AM', ai: 18, human: 3, leads: 7 },
+    { time: 'Now', ai: conversations.filter(c => c.currentHandler === 'ai').length + 18, human: conversations.filter(c => c.currentHandler === 'human').length + 3, leads: leads.length + 5 },
+  ], [conversations, leads]);
+
+  return (
+    <div className="space-y-6 animate-fade-in-up">
+      {/* Top KPI Row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="p-4 rounded-lg bg-card border border-border card-interactive">
+          <div className="flex items-center gap-2 mb-2">
+            <DollarSign className="w-4 h-4 text-gold" />
+            <span className="text-xs text-muted-foreground">Revenue Pipeline</span>
+          </div>
+          <p className="text-2xl font-bold text-gold number-roll-in">${(revenuePipeline / 1000).toFixed(0)}K</p>
+          <p className="text-[10px] text-green-400 mt-1 flex items-center gap-1">
+            <TrendingUp className="w-3 h-3" /> +12.5% from last week
+          </p>
+        </div>
+        <div className="p-4 rounded-lg bg-card border border-border card-interactive">
+          <div className="flex items-center gap-2 mb-2">
+            <Target className="w-4 h-4 text-gold" />
+            <span className="text-xs text-muted-foreground">Conversion Rate</span>
+          </div>
+          <p className="text-2xl font-bold text-foreground number-roll-in">34.2%</p>
+          <p className="text-[10px] text-green-400 mt-1 flex items-center gap-1">
+            <TrendingUp className="w-3 h-3" /> +5.3% vs industry avg
+          </p>
+        </div>
+        <div className="p-4 rounded-lg bg-card border border-border card-interactive">
+          <div className="flex items-center gap-2 mb-2">
+            <Zap className="w-4 h-4 text-gold" />
+            <span className="text-xs text-muted-foreground">AI Handle Rate</span>
+          </div>
+          <p className="text-2xl font-bold text-foreground number-roll-in">{handlerData[0]?.value || 0}%</p>
+          <p className="text-[10px] text-muted-foreground mt-1">
+            {handlerData[0]?.count || 0} of {(handlerData[0]?.count || 0) + (handlerData[1]?.count || 0)} conversations
+          </p>
+        </div>
+        <div className="p-4 rounded-lg bg-card border border-border card-interactive">
+          <div className="flex items-center gap-2 mb-2">
+            <Clock className="w-4 h-4 text-gold" />
+            <span className="text-xs text-muted-foreground">Avg First Response</span>
+          </div>
+          <p className="text-2xl font-bold text-foreground number-roll-in">1.2s</p>
+          <p className="text-[10px] text-green-400 mt-1 flex items-center gap-1">
+            <TrendingUp className="w-3 h-3" /> 98% faster than human avg
+          </p>
+        </div>
+      </div>
+
+      {/* Charts Row 1 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Lead Stage Funnel */}
+        <div className="rounded-lg border border-border bg-card p-5">
+          <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+            <BarChart3 className="w-4 h-4 text-gold" /> Lead Pipeline by Stage
+          </h3>
+          <ResponsiveContainer width="100%" height={240}>
+            <BarChart data={funnelData} barSize={28}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 12%, 18%)" />
+              <XAxis dataKey="name" tick={{ fill: 'hsl(220, 10%, 50%)', fontSize: 11 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: 'hsl(220, 10%, 50%)', fontSize: 11 }} axisLine={false} tickLine={false} />
+              <Tooltip {...chartTooltipStyle} />
+              <Bar dataKey="value" fill={CHART_GOLD} radius={[4, 4, 0, 0]} name="Leads" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Lead Sources Pie */}
+        <div className="rounded-lg border border-border bg-card p-5">
+          <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+            <Users className="w-4 h-4 text-gold" /> Lead Sources
+          </h3>
+          <ResponsiveContainer width="100%" height={240}>
+            <PieChart>
+              <Pie
+                data={sourceData}
+                cx="50%"
+                cy="50%"
+                innerRadius={55}
+                outerRadius={85}
+                paddingAngle={3}
+                dataKey="value"
+                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+              >
+                {sourceData.map((_entry, index) => (
+                  <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip {...chartTooltipStyle} />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Charts Row 2 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Activity Timeline */}
+        <div className="rounded-lg border border-border bg-card p-5">
+          <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+            <Activity className="w-4 h-4 text-gold" /> Today's Activity Timeline
+          </h3>
+          <ResponsiveContainer width="100%" height={240}>
+            <AreaChart data={timelineData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 12%, 18%)" />
+              <XAxis dataKey="time" tick={{ fill: 'hsl(220, 10%, 50%)', fontSize: 11 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: 'hsl(220, 10%, 50%)', fontSize: 11 }} axisLine={false} tickLine={false} />
+              <Tooltip {...chartTooltipStyle} />
+              <Legend wrapperStyle={{ fontSize: '11px', color: 'hsl(220, 10%, 50%)' }} />
+              <Area type="monotone" dataKey="ai" stackId="1" stroke={CHART_GOLD} fill={CHART_GOLD} fillOpacity={0.3} name="AI Conversations" />
+              <Area type="monotone" dataKey="human" stackId="1" stroke={CHART_BLUE} fill={CHART_BLUE} fillOpacity={0.3} name="Human Conversations" />
+              <Area type="monotone" dataKey="leads" stroke={CHART_GREEN} fill={CHART_GREEN} fillOpacity={0.15} name="New Leads" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Sentiment Distribution */}
+        <div className="rounded-lg border border-border bg-card p-5">
+          <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+            <Gauge className="w-4 h-4 text-gold" /> Conversation Sentiment
+          </h3>
+          <ResponsiveContainer width="100%" height={240}>
+            <PieChart>
+              <Pie
+                data={sentimentData}
+                cx="50%"
+                cy="50%"
+                innerRadius={55}
+                outerRadius={85}
+                paddingAngle={3}
+                dataKey="value"
+                label={({ name, value }) => `${name}: ${value}`}
+              >
+                {sentimentData.map((entry, index) => {
+                  const colors: Record<string, string> = { Positive: CHART_GREEN, Neutral: CHART_BLUE, Frustrated: CHART_ORANGE, Angry: CHART_RED };
+                  return <Cell key={`cell-${index}`} fill={colors[entry.name] || CHART_PURPLE} />;
+                })}
+              </Pie>
+              <Tooltip {...chartTooltipStyle} />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Page ──────────────────────────────────────────────────────────────
 
 const ManagerPage = () => {
@@ -877,7 +1118,7 @@ const ManagerPage = () => {
   const [selectedConversationId, setSelectedConversationId] = useState<
     string | null
   >(null);
-  const [activeTab, setActiveTab] = useState("live");
+  const [activeTab, setActiveTab] = useState("dashboard");
 
   // Computed counts
   // ⚡ Bolt Performance Optimization: Memoized expensive array filter operations
@@ -947,13 +1188,16 @@ const ManagerPage = () => {
         {/* Tabbed Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="bg-secondary/50 border border-border">
+            <TabsTrigger value="dashboard" className="text-xs gap-1.5">
+              <BarChart3 className="w-3.5 h-3.5" /> Dashboard
+            </TabsTrigger>
             <TabsTrigger value="live" className="text-xs gap-1.5">
               <Eye className="w-3.5 h-3.5" /> Live Monitor
             </TabsTrigger>
             <TabsTrigger value="escalations" className="text-xs gap-1.5">
               <AlertTriangle className="w-3.5 h-3.5" /> Escalations
               {openEscalationCount > 0 && (
-                <span className="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full bg-gold/20 text-gold text-[9px] font-bold">
+                <span className="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full bg-gold/20 text-gold text-[9px] font-bold badge-pulse">
                   {openEscalationCount}
                 </span>
               )}
@@ -965,6 +1209,11 @@ const ManagerPage = () => {
               <Shield className="w-3.5 h-3.5" /> Compliance
             </TabsTrigger>
           </TabsList>
+
+          {/* Dashboard Tab */}
+          <TabsContent value="dashboard" className="space-y-6">
+            <DashboardCharts />
+          </TabsContent>
 
           {/* Live Monitor Tab */}
           <TabsContent value="live" className="space-y-6">

@@ -1,6 +1,7 @@
 # AutoRep AI — Door Step Auto
 
-**Premium AI-powered automotive sales agent platform.**
+**Version 1.1.0-rc.1** (See [CHANGELOG.md](./CHANGELOG.md))
+*Premium AI-powered automotive sales agent platform with Apple-grade PWA mobile support.*
 
 AutoRep AI handles customer conversations across phone, SMS, website chat, Facebook, and Instagram — guiding shoppers from first contact through vehicle match, quote, appointment, and finance intake.
 

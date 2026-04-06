@@ -21,7 +21,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
 
       {/* Mobile Sidebar & Header */}
       <div className="flex flex-col flex-1 w-full overflow-hidden relative">
-        <header className="flex md:hidden items-center p-4 border-b border-sidebar-border bg-sidebar shrink-0">
+        <header className="flex md:hidden items-center p-4 border-b border-sidebar-border bg-sidebar/95 backdrop-blur shrink-0 safe-top sticky top-0 z-50">
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="mr-2">
@@ -29,7 +29,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
                 <span className="sr-only">Toggle menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="p-0 w-[240px]">
+            <SheetContent side="left" className="p-0 w-[240px] bg-sidebar border-r border-sidebar-border safe-top safe-bottom">
               <AppSidebar onNavigate={() => setOpen(false)} />
             </SheetContent>
           </Sheet>
@@ -38,7 +38,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
           </div>
         </header>
 
-        <main className="flex-1 overflow-x-hidden overflow-y-auto w-full bg-background scroll-smooth">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto w-full bg-background scroll-smooth safe-bottom">
           {children}
         </main>
       </div>

@@ -66,7 +66,9 @@ export type AuditAction =
   | 'document_received'
   | 'packet_routed'
   | 'opt_out_recorded'
-  | 'manager_override';
+  | 'manager_override'
+  | 'stage_updated'
+  | 'sentiment_changed';
 
 // ─── Domain Models ──────────────────────────────────────────────────────────
 
