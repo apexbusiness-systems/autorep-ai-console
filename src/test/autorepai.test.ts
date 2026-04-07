@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { runComplianceGate } from '../agents/autorepai/compliance';
 import { buildSystemPrompt } from '../agents/autorepai/prompt-builder';
-import { agentResponseSchema, AgentResponseSchemaType } from '../agents/autorepai/output-schema';
+import { agentResponseSchema } from '../agents/autorepai/output-schema';
+import { AgentResponse } from '../agents/autorepai/types';
 import { validateToolCall } from '../agents/autorepai/tool-registry';
 import { agentEvalFixtures } from './fixtures/agent-evals';
 import { getAgentMode, isDemoMode, isProdMode } from '../agents/autorepai/env';
@@ -11,7 +12,7 @@ describe('AUTOREPAI Runtime', () => {
     it('should block opted-out users', () => {
       const { context, expectedComplianceApproved } = agentEvalFixtures.optOutBlocked;
 
-      const mockResponse: AgentResponseSchemaType = {
+      const mockResponse: AgentResponse = {
         message: "Sure, let's look at cars.",
         intent: "general",
         posture: "GUIDE",
@@ -32,7 +33,7 @@ describe('AUTOREPAI Runtime', () => {
     it('should flag missing AI disclosure on first contact', () => {
       const { context } = agentEvalFixtures.firstContact;
 
-      const mockResponse: AgentResponseSchemaType = {
+      const mockResponse: AgentResponse = {
         message: "Hello! How can I help?", // No disclosure
         intent: "general",
         posture: "GUIDE",
@@ -53,7 +54,7 @@ describe('AUTOREPAI Runtime', () => {
     it('should block finance guarantees', () => {
       const context = agentEvalFixtures.financeQuestion.context;
 
-      const mockResponse: AgentResponseSchemaType = {
+      const mockResponse: AgentResponse = {
         message: "You are guaranteed approval!",
         intent: "finance",
         posture: "LEAN_IN",
