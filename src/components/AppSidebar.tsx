@@ -98,7 +98,7 @@ const AppSidebar = ({ onNavigate }: { onNavigate?: () => void }) => {
           <span className="text-[10px] text-muted-foreground">Supabase Connected</span>
         </div>
         <div className="flex items-center justify-between pt-2 border-t border-sidebar-border">
-          <span className="text-xs text-muted-foreground">Theme</span>
+          <span className="text-xs text-muted-foreground">Night / Day</span>
           <ThemeToggle />
         </div>
       </div>
