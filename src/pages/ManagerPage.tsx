@@ -708,15 +708,20 @@ function CompliancePanel({
   escalations: Escalation[];
 }) {
   const totalConvos = conversations.length || 1;
-  const disclosureSent = conversations.filter((c) => c.aiDisclosureSent).length;
+
+  const complianceData = useMemo(() => {
+    return {
+      disclosureSent: conversations.filter((c) => c.aiDisclosureSent).length,
+      optOutHandled: conversations.filter((c) => c.optedOut).length,
+      flaggedConvos: conversations.filter((c) => c.escalationFlag).length,
+      openEscalations: escalations.filter((e) => e.status === "open").length,
+    };
+  }, [conversations, escalations]);
+
   const disclosureRate =
     totalConvos > 0
-      ? Math.round((disclosureSent / totalConvos) * 100)
+      ? Math.round((complianceData.disclosureSent / totalConvos) * 100)
       : 100;
-
-  const optOutHandled = conversations.filter((c) => c.optedOut).length;
-  const flaggedConvos = conversations.filter((c) => c.escalationFlag).length;
-  const openEscalations = escalations.filter((e) => e.status === "open").length;
 
   const complianceItems = [
     {
@@ -729,11 +734,11 @@ function CompliancePanel({
           : disclosureRate >= 80
           ? "text-yellow-400"
           : "text-red-400",
-      detail: `${disclosureSent} of ${totalConvos} conversations`,
+      detail: `${complianceData.disclosureSent} of ${totalConvos} conversations`,
     },
     {
       label: "Opt-Out Requests Handled",
-      value: String(optOutHandled),
+      value: String(complianceData.optOutHandled),
       icon: Ban,
       color: "text-foreground",
       detail: "All opt-outs processed within SLA",
@@ -747,10 +752,10 @@ function CompliancePanel({
     },
     {
       label: "Flagged Conversations",
-      value: String(flaggedConvos),
+      value: String(complianceData.flaggedConvos),
       icon: FileWarning,
-      color: flaggedConvos > 0 ? "text-yellow-400" : "text-green-400",
-      detail: `${openEscalations} open escalations`,
+      color: complianceData.flaggedConvos > 0 ? "text-yellow-400" : "text-green-400",
+      detail: `${complianceData.openEscalations} open escalations`,
     },
   ];
 

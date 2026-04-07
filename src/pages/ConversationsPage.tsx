@@ -278,17 +278,23 @@ function MessageBubble({
 // ─── Context Panel ─────────────────────────────────────────────────────────────
 
 function ContextPanel({ conversation }: { conversation: Conversation }) {
-  const quotes = useStore((s) =>
-    s.quotes.filter((q) => q.conversationId === conversation.id)
-  );
-  const appointments = useStore((s) =>
-    s.appointments.filter((a) => a.conversationId === conversation.id)
-  );
-  const escalation = useStore((s) =>
-    s.escalations.find(
+  const allQuotes = useStore((s) => s.quotes);
+  const allAppointments = useStore((s) => s.appointments);
+  const allEscalations = useStore((s) => s.escalations);
+
+  const quotes = useMemo(() =>
+    allQuotes.filter((q) => q.conversationId === conversation.id)
+  , [allQuotes, conversation.id]);
+
+  const appointments = useMemo(() =>
+    allAppointments.filter((a) => a.conversationId === conversation.id)
+  , [allAppointments, conversation.id]);
+
+  const escalation = useMemo(() =>
+    allEscalations.find(
       (e) => e.conversationId === conversation.id && e.status !== "resolved"
     )
-  );
+  , [allEscalations, conversation.id]);
 
   return (
     <div className="w-[300px] border-l border-border flex flex-col overflow-y-auto bg-background">
