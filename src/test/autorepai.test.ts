@@ -12,7 +12,7 @@ describe('AUTOREPAI Runtime', () => {
     it('should block opted-out users', () => {
       const { context, expectedComplianceApproved } = agentEvalFixtures.optOutBlocked;
 
-      const mockResponse: AgentResponseSchemaType = {
+      const mockResponse: AgentResponse = {
         message: "Sure, let's look at cars.",
         intent: "general",
         posture: "GUIDE",
@@ -33,7 +33,7 @@ describe('AUTOREPAI Runtime', () => {
     it('should flag missing AI disclosure on first contact', () => {
       const { context } = agentEvalFixtures.firstContact;
 
-      const mockResponse: AgentResponseSchemaType = {
+      const mockResponse: AgentResponse = {
         message: "Hello! How can I help?", // No disclosure
         intent: "general",
         posture: "GUIDE",
@@ -54,7 +54,7 @@ describe('AUTOREPAI Runtime', () => {
     it('should block finance guarantees', () => {
       const context = agentEvalFixtures.financeQuestion.context;
 
-      const mockResponse: AgentResponseSchemaType = {
+      const mockResponse: AgentResponse = {
         message: "You are guaranteed approval!",
         intent: "finance",
         posture: "LEAN_IN",
