@@ -26,7 +26,7 @@ export class MockVoiceAgent {
     this.onAgentSpeak = onAgentSpeak;
     this.onCallStateChange = onCallStateChange;
 
-    const SpeechRecognition = window.SpeechRecognition || (window as unknown as Record<string, unknown>).webkitSpeechRecognition;
+    const SpeechRecognition = (window as unknown as Record<string, unknown>).SpeechRecognition || (window as unknown as Record<string, unknown>).webkitSpeechRecognition;
     if (SpeechRecognition) {
       this.recognition = new (SpeechRecognition as new () => unknown)();
       (this.recognition as { continuous: boolean; interimResults: boolean; lang: string; onresult: unknown; onend: unknown; onerror: unknown; start: () => void; stop: () => void; }).continuous = false; // Stop after each phrase to respond
