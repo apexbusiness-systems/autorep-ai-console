@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { runComplianceGate } from '../agents/autorepai/compliance';
 import { buildSystemPrompt } from '../agents/autorepai/prompt-builder';
-import { agentResponseSchema, AgentResponseSchemaType } from '../agents/autorepai/output-schema';
+import { agentResponseSchema } from '../agents/autorepai/output-schema';
+import { AgentResponse } from '../agents/autorepai/types';
 import { validateToolCall } from '../agents/autorepai/tool-registry';
 import { agentEvalFixtures } from './fixtures/agent-evals';
 import { getAgentMode, isDemoMode, isProdMode } from '../agents/autorepai/env';

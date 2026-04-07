@@ -23,7 +23,7 @@ export function buildAuditEvent(
 ): AuditEvent {
   return {
     timestamp: new Date().toISOString(),
-    conversationId: conversationId || context.conversation?.id,
+    conversationId: conversationId || (context.conversation?.id as string | undefined),
     channel: context.channel,
     promptVersion: response.auditMeta.promptVersion,
     model: response.auditMeta.model,

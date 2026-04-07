@@ -138,12 +138,14 @@ export class MockVoiceAgent {
 
     try {
       const response = await aiProvider.complete({
-        systemPrompt: "You are an expert automotive sales AI agent. Keep responses short and conversational, suitable for voice.",
-        messages: this.conversationHistory,
+        messages: [
+          { role: 'system', content: "You are an expert automotive sales AI agent. Keep responses short and conversational, suitable for voice." },
+          ...this.conversationHistory,
+        ],
       });
 
-      this.conversationHistory.push({ role: 'assistant', content: response.content });
-      await this.speak(response.content);
+      this.conversationHistory.push({ role: 'assistant', content: response.message });
+      await this.speak(response.message);
 
       if (this.currentCallState !== 'ended') {
         this.startListening();
