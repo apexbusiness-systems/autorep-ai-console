@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { cn } from "@/lib/utils";
 import {
   Headphones,
@@ -29,16 +30,17 @@ const AppSidebar = ({ onNavigate }: { onNavigate?: () => void }) => {
   const escalations = useEscalations();
   const leads = useLeads();
 
-  const activeConvos = conversations.filter(c => c.status === 'active').length;
-  const openEscalations = escalations.filter(e => e.status === 'open').length;
-  const hotLeads = leads.filter(l => l.priority === 'hot').length;
+  // ⚡ Bolt Performance Optimization: Memoize array derivations
+  // Prevents O(N) recalculations of badge counts on every render
+  // Expected impact: Reduces main thread blocking during navigation or unrelated store updates
+  const activeConvos = useMemo(() => conversations.filter(c => c.status === 'active').length, [conversations]);
+  const openEscalations = useMemo(() => escalations.filter(e => e.status === 'open').length, [escalations]);
+  const hotLeads = useMemo(() => leads.filter(l => l.priority === 'hot').length, [leads]);
+  const unreadConversations = useMemo(() => conversations.reduce((sum, c) => sum + c.unreadCount, 0), [conversations]);
 
   const getBadge = (to: string): number | null => {
     if (to === '/' && activeConvos > 0) return activeConvos;
-    if (to === '/conversations') {
-      const unread = conversations.reduce((sum, c) => sum + c.unreadCount, 0);
-      return unread > 0 ? unread : null;
-    }
+    if (to === '/conversations' && unreadConversations > 0) return unreadConversations;
     if (to === '/leads' && hotLeads > 0) return hotLeads;
     if (to === '/manager' && openEscalations > 0) return openEscalations;
     return null;
