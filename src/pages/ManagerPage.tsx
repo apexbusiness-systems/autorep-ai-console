@@ -161,9 +161,9 @@ function LiveConversationMonitor({
   conversations: Conversation[];
   onViewTranscript: (id: string) => void;
 }) {
-  const activeConvos = conversations.filter(
+  const activeConvos = useMemo(() => conversations.filter(
     (c) => c.status === "active" || c.status === "escalated"
-  );
+  ), [conversations]);
 
   return (
     <div className="rounded-lg border border-border overflow-hidden">
@@ -308,7 +308,7 @@ function EscalationAlerts({
   escalations: Escalation[];
   onViewTranscript: (conversationId: string) => void;
 }) {
-  const openEscalations = escalations.filter((e) => e.status === "open");
+  const openEscalations = useMemo(() => escalations.filter((e) => e.status === "open"), [escalations]);
 
   if (openEscalations.length === 0) {
     return (
@@ -423,6 +423,20 @@ function TranscriptReviewPanel({
   const messages = useMessages(conversationId);
   const conversation = conversations.find((c) => c.id === conversationId);
 
+  // Combine inline messages from conversation object and store messages
+  const allMessages: Message[] = useMemo(() => {
+    if (!conversation) return [];
+    return messages.length > 0
+      ? messages
+      : conversation.messages && conversation.messages.length > 0
+      ? conversation.messages
+      : [];
+  }, [messages, conversation]);
+
+  const pendingApproval = useMemo(() => allMessages.filter(
+    (m) => m.requiresApproval && m.approved === undefined
+  ), [allMessages]);
+
   if (!conversationId || !conversation) {
     return (
       <div className="rounded-lg border border-border bg-card p-12 text-center">
@@ -436,18 +450,6 @@ function TranscriptReviewPanel({
       </div>
     );
   }
-
-  // Combine inline messages from conversation object and store messages
-  const allMessages: Message[] =
-    messages.length > 0
-      ? messages
-      : conversation.messages && conversation.messages.length > 0
-      ? conversation.messages
-      : [];
-
-  const pendingApproval = allMessages.filter(
-    (m) => m.requiresApproval && m.approved === undefined
-  );
 
   return (
     <div className="space-y-4">
@@ -825,9 +827,9 @@ function RecentHandoffs({
 }: {
   auditEvents: { id: string; action: string; entityId: string; performedAt: string; details: string }[];
 }) {
-  const handoffs = auditEvents.filter(
+  const handoffs = useMemo(() => auditEvents.filter(
     (e) => e.action === "handoff_completed" || e.action === "handoff_initiated"
-  );
+  ), [auditEvents]);
 
   if (handoffs.length === 0) {
     return (

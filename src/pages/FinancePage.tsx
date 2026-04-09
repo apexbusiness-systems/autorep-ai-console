@@ -164,7 +164,7 @@ const PacketCard = ({ packet, customerName, expanded, onToggle }: {
     in_progress: 'pending', ready: 'active', pending_consent: 'idle', submitted: 'connected', approved: 'connected',
   };
 
-  const docsReceived = packet.documents.filter(d => d.status === 'received').length;
+  const docsReceived = useMemo(() => packet.documents.filter(d => d.status === 'received').length, [packet.documents]);
   const docsTotal = packet.documents.length;
 
   return (
