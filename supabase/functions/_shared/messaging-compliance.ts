@@ -69,6 +69,7 @@ export function sanitizeSmsBody(
   const warnings: string[] = [];
 
   // Strip non-printable control characters (keep newline and common whitespace)
+  // eslint-disable-next-line no-control-regex -- Intentional: sanitize SMS body to remove injection vectors
   let sanitized = body.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
 
   // Trim excessive whitespace
