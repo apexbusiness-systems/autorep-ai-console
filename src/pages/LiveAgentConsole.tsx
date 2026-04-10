@@ -75,6 +75,13 @@ const LiveAgentConsole = () => {
     vehicles.filter(v => v.status === 'available').slice(0, 3),
   [vehicles]);
 
+  // ⚡ Bolt Performance Optimization: Memoized display messages
+  // Filtering out 'system' messages on every render caused O(N) operations
+  // synchronously on every keystroke when typing in the input field.
+  const displayMessages = useMemo(() =>
+    messages.filter(m => m.role !== 'system'),
+  [messages]);
+
   const handleSend = () => {
     if (!inputValue.trim() || !activeConvId) return;
     const msg: Message = {
@@ -342,7 +349,7 @@ const LiveAgentConsole = () => {
               <TabsContent value="transcript" className="p-4 space-y-3">
                 <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Transcript</h4>
                 <div className="space-y-3">
-                  {messages.filter(m => m.role !== 'system').map((msg) => (
+                  {displayMessages.map((msg) => (
                     <div key={msg.id} className="space-y-0.5">
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] font-semibold text-gold uppercase">{msg.role === 'agent' ? 'AI Agent' : msg.role === 'manager' ? 'Manager' : 'Customer'}</span>
