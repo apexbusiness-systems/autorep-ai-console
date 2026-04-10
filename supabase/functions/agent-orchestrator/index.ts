@@ -9,18 +9,29 @@ import { runComplianceGate } from "@/agents/autorepai/compliance.ts";
 import { validateToolCall } from "@/agents/autorepai/tool-registry.ts";
 import { agentResponseSchema } from "@/agents/autorepai/output-schema.ts";
 import { buildAuditEvent } from "@/agents/autorepai/audit.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { getCorsHeaders, handleCorsPreflightOrReject } from "../_shared/cors.ts";
+import { checkRateLimit, rateLimitHeaders, validateRequestSize } from "../_shared/rate-limit.ts";
 
 const GROQ_BASE_URL = "https://api.groq.com/openai/v1";
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+  const preflightOrBlock = handleCorsPreflightOrReject(req);
+  if (preflightOrBlock) return preflightOrBlock;
+
+  const corsHeaders = getCorsHeaders(req);
+
+  // Rate limit: 20 AI requests per minute per IP
+  const rateCheck = checkRateLimit(req, { windowMs: 60_000, maxRequests: 20 });
+  if (!rateCheck.allowed) {
+    return new Response(
+      JSON.stringify({ error: "Rate limit exceeded. Try again shortly." }),
+      { status: 429, headers: { ...corsHeaders, ...rateLimitHeaders(rateCheck), "Content-Type": "application/json" } }
+    );
   }
+
+  // Reject oversized payloads (200KB max for conversation context)
+  const sizeCheck = validateRequestSize(req, 200_000);
+  if (sizeCheck) return sizeCheck;
 
   try {
     const payload = await req.json();
@@ -157,8 +168,14 @@ serve(async (req) => {
         }
       });
 
-      // In a real repo, we'd have an audit table. We'll use logs or a mock table.
-      // await supabase.from("audit_events").insert(auditEvent);
+      await supabase.from("audit_events").insert({
+        action: auditEvent.escalationDecision ? "handoff_initiated" : "message_sent",
+        entity_type: "conversation",
+        entity_id: conversationId,
+        performed_by: "AI Agent",
+        details: `Intent: ${auditEvent.intent} | Posture: ${auditEvent.posture} | Confidence: ${agentResponse.confidence}`,
+        metadata: auditEvent,
+      });
     }
 
     // 9. Return structured result

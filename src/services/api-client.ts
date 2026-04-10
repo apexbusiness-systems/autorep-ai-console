@@ -6,7 +6,10 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
-const PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID || "sijqccfsvrvgujgkkwuf";
+const PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+if (!PROJECT_ID) {
+  throw new Error('Missing VITE_SUPABASE_PROJECT_ID environment variable.');
+}
 const FUNCTIONS_URL = `https://${PROJECT_ID}.supabase.co/functions/v1`;
 
 async function callEdgeFunction<T>(

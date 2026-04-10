@@ -1,10 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.101.1";
+import { getCorsHeaders, handleCorsPreflightOrReject } from "../_shared/cors.ts";
+import { checkRateLimit, rateLimitHeaders, validateRequestSize } from "../_shared/rate-limit.ts";
+import { verifyTwilioSignature, verifyMetaSignature, verifyCustomWebhookSignature } from "../_shared/webhook-security.ts";
 
 /**
  * Unified webhook handler for inbound events:
@@ -13,9 +11,24 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.101.1";
  * - Generic CRM/DMS callbacks
  */
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
+
+  // Allow GET for Meta webhook verification without CORS blocking
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
+
+  // Rate limit: 60 webhook events per minute (higher for inbound traffic)
+  const rateCheck = checkRateLimit(req, { windowMs: 60_000, maxRequests: 60 });
+  if (!rateCheck.allowed) {
+    return new Response(
+      JSON.stringify({ error: "Webhook rate limit exceeded." }),
+      { status: 429, headers: { ...corsHeaders, ...rateLimitHeaders(rateCheck), "Content-Type": "application/json" } }
+    );
+  }
+
+  const sizeCheck = validateRequestSize(req, 100_000);
+  if (sizeCheck) return sizeCheck;
 
   const url = new URL(req.url);
   const source = url.searchParams.get("source") || "unknown";
@@ -35,11 +48,29 @@ serve(async (req) => {
   }
 
   try {
-    const body = await req.json();
-    
+    const rawBody = await req.text();
+    const body = JSON.parse(rawBody);
+
+    // Verify webhook signatures based on source
+    let signatureValid = true;
+    if (source.startsWith("twilio")) {
+      signatureValid = await verifyTwilioSignature(req, rawBody);
+    } else if (source === "meta") {
+      signatureValid = await verifyMetaSignature(req, rawBody);
+    } else if (source === "dealertrack" || source === "pbs") {
+      signatureValid = await verifyCustomWebhookSignature(req, rawBody);
+    }
+
+    if (!signatureValid) {
+      return new Response(
+        JSON.stringify({ error: "Invalid webhook signature" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    
+
     if (!supabaseUrl || !supabaseKey) {
       throw new Error("Supabase credentials not configured");
     }
