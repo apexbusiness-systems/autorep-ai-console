@@ -1,13 +1,20 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
+import { getCorsHeaders, handleCorsPreflightOrReject } from "../_shared/cors.ts";
+import { checkRateLimit, rateLimitHeaders } from "../_shared/rate-limit.ts";
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+  const preflightOrBlock = handleCorsPreflightOrReject(req);
+  if (preflightOrBlock) return preflightOrBlock;
+
+  const corsHeaders = getCorsHeaders(req);
+
+  // Rate limit: 20 VIN decodes per minute
+  const rateCheck = checkRateLimit(req, { windowMs: 60_000, maxRequests: 20 });
+  if (!rateCheck.allowed) {
+    return new Response(
+      JSON.stringify({ error: "VIN decode rate limit exceeded." }),
+      { status: 429, headers: { ...corsHeaders, ...rateLimitHeaders(rateCheck), "Content-Type": "application/json" } }
+    );
   }
 
   try {

@@ -13,6 +13,7 @@ import {
 } from "@/data/seed";
 import SplashScreen from "@/components/SplashScreen";
 import DemoSimulator from "@/components/DemoSimulator";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import LiveAgentConsole from "./pages/LiveAgentConsole";
 import ConversationsPage from "./pages/ConversationsPage";
 import LeadsPage from "./pages/LeadsPage";
@@ -66,16 +67,18 @@ const App = () => {
         <VoiceTestingPanel />
 
         <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<LiveAgentConsole />} />
-            <Route path="/conversations" element={<ConversationsPage />} />
-            <Route path="/leads" element={<LeadsPage />} />
-            <Route path="/vehicles" element={<VehiclesPage />} />
-            <Route path="/finance" element={<FinancePage />} />
-            <Route path="/manager" element={<ManagerPage />} />
-            <Route path="/integrations" element={<IntegrationsPage />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <ErrorBoundary>
+            <Routes>
+              <Route path="/" element={<LiveAgentConsole />} />
+              <Route path="/conversations" element={<ConversationsPage />} />
+              <Route path="/leads" element={<LeadsPage />} />
+              <Route path="/vehicles" element={<VehiclesPage />} />
+              <Route path="/finance" element={<FinancePage />} />
+              <Route path="/manager" element={<ManagerPage />} />
+              <Route path="/integrations" element={<IntegrationsPage />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </ErrorBoundary>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>

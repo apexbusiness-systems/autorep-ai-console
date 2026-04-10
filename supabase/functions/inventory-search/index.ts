@@ -1,14 +1,21 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.101.1";
+import { getCorsHeaders, handleCorsPreflightOrReject } from "../_shared/cors.ts";
+import { checkRateLimit, rateLimitHeaders, validateRequestSize } from "../_shared/rate-limit.ts";
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+  const preflightOrBlock = handleCorsPreflightOrReject(req);
+  if (preflightOrBlock) return preflightOrBlock;
+
+  const corsHeaders = getCorsHeaders(req);
+
+  // Rate limit: 30 inventory searches per minute
+  const rateCheck = checkRateLimit(req, { windowMs: 60_000, maxRequests: 30 });
+  if (!rateCheck.allowed) {
+    return new Response(
+      JSON.stringify({ error: "Search rate limit exceeded." }),
+      { status: 429, headers: { ...corsHeaders, ...rateLimitHeaders(rateCheck), "Content-Type": "application/json" } }
+    );
   }
 
   try {

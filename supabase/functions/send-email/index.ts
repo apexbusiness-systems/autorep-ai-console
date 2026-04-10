@@ -1,15 +1,26 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.101.1";
+import { getCorsHeaders, handleCorsPreflightOrReject } from "../_shared/cors.ts";
+import { checkRateLimit, rateLimitHeaders, validateRequestSize } from "../_shared/rate-limit.ts";
+import { checkMessagingTimeWindow, sanitizeEmailHtml } from "../_shared/messaging-compliance.ts";
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+  const preflightOrBlock = handleCorsPreflightOrReject(req);
+  if (preflightOrBlock) return preflightOrBlock;
+
+  const corsHeaders = getCorsHeaders(req);
+
+  // Rate limit: 15 emails per minute per IP
+  const rateCheck = checkRateLimit(req, { windowMs: 60_000, maxRequests: 15 });
+  if (!rateCheck.allowed) {
+    return new Response(
+      JSON.stringify({ error: "Email rate limit exceeded." }),
+      { status: 429, headers: { ...corsHeaders, ...rateLimitHeaders(rateCheck), "Content-Type": "application/json" } }
+    );
   }
+
+  const sizeCheck = validateRequestSize(req, 100_000);
+  if (sizeCheck) return sizeCheck;
 
   try {
     const { to, subject, html, text, from, replyTo, leadId, conversationId, type = "general" } = await req.json();
@@ -29,6 +40,20 @@ serve(async (req) => {
       );
     }
 
+    // Sanitize HTML content to prevent XSS injection
+    const safeHtml = html ? sanitizeEmailHtml(html) : undefined;
+
+    // TCPA/CASL time window check for marketing emails
+    if (type === "marketing") {
+      const timeCheck = checkMessagingTimeWindow();
+      if (!timeCheck.allowed) {
+        return new Response(
+          JSON.stringify({ error: "Blocked by CASL compliance", reason: timeCheck.reason }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
     let messageId: string;
     let provider: string;
@@ -44,7 +69,7 @@ serve(async (req) => {
           from: from || "Door Step Auto <sales@doorstepauto.com>",
           to: [to],
           subject,
-          html: html || undefined,
+          html: safeHtml || undefined,
           text: text || undefined,
           reply_to: replyTo || undefined,
         }),
