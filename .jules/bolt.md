@@ -7,3 +7,6 @@
 ## 2025-04-08 - Missing array memoization caused unnecessary renders on keystrokes
 **Learning:** Found that `LiveAgentConsole` was doing expensive array `.filter` operations (e.g. `messages.filter(...)`) synchronously during render, recalculating even when the underlying data hadn't changed, notably on every keystroke when `inputValue` changes.
 **Action:** When a page calculates derived lists from store arrays, wrap them in `useMemo` so they're only recomputed when the array data itself changes.
+## 2025-04-09 - Zustand `useStore` strict equality anti-pattern
+**Learning:** Found that fallback empty arrays (e.g. `s.messages[id] || []`) in `useStore` selectors cause consumers to re-render on *every* single state change (even unrelated ones) because `[] !== []` and Zustand uses strict reference equality (`===`) by default.
+**Action:** Always declare a module-level constant like `const EMPTY_ARRAY = []` and return that as the fallback in Zustand selectors when an array field might be missing.

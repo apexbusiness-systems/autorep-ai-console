@@ -58,11 +58,17 @@ const VehiclesPage = () => {
   const builderMonthly = builderTotal > 0 ? calculatePayment(builderTotal, rate, term) : 0;
   const builderBiweekly = builderMonthly / 2.17;
 
-  const compareVehicles = vehicles.filter(v => compareIds.includes(v.id));
+  // ⚡ Bolt Performance Optimization: Memoized array filter operation
+  // Prevents O(N) recalculation on every render (e.g. fast-typing in search input)
+  const compareVehicles = useMemo(() => vehicles.filter(v => compareIds.includes(v.id)), [vehicles, compareIds]);
 
   const toggleCompare = (id: string) => {
     setCompareIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : prev.length < 3 ? [...prev, id] : prev);
   };
+
+  // ⚡ Bolt Performance Optimization: Extract available vehicles into useMemo
+  // Prevents recalculating the filtered list on every render
+  const availableVehicles = useMemo(() => vehicles.filter(v => v.status === 'available'), [vehicles]);
 
   return (
     <AppLayout>
@@ -135,7 +141,7 @@ const VehiclesPage = () => {
                 <label className="text-[11px] font-medium text-muted-foreground">Vehicle</label>
                 <select className="w-full bg-secondary rounded-md px-3 py-2 text-sm text-foreground border border-border outline-none focus:border-gold/40" value={builderVehicleId || ''} onChange={e => setBuilderVehicleId(e.target.value)}>
                   <option value="">Select a vehicle</option>
-                  {vehicles.filter(v => v.status === 'available').map(v => (
+                  {availableVehicles.map(v => (
                     <option key={v.id} value={v.id}>{v.year} {v.make} {v.model} {v.trim} — ${v.price.toLocaleString()}</option>
                   ))}
                 </select>

@@ -177,8 +177,10 @@ export function useActiveConversation() {
   });
 }
 
+const EMPTY_ARRAY: Message[] = [];
+
 export function useMessages(conversationId: string | null) {
-  return useStore(s => (conversationId ? s.messages[conversationId] || [] : []));
+  return useStore(s => (conversationId ? s.messages[conversationId] || EMPTY_ARRAY : EMPTY_ARRAY));
 }
 
 export function useVehicles() {
