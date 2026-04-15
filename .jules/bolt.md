@@ -10,3 +10,6 @@
 ## 2025-04-09 - Zustand `useStore` strict equality anti-pattern
 **Learning:** Found that fallback empty arrays (e.g. `s.messages[id] || []`) in `useStore` selectors cause consumers to re-render on *every* single state change (even unrelated ones) because `[] !== []` and Zustand uses strict reference equality (`===`) by default.
 **Action:** Always declare a module-level constant like `const EMPTY_ARRAY = []` and return that as the fallback in Zustand selectors when an array field might be missing.
+## 2026-04-10 - Deferred Search Queries
+**Learning:** Found that `searchQuery` in `ConversationsPage` was directly tied to a `useMemo` block that filtered a list synchronously on every keystroke, leading to possible UI stuttering.
+**Action:** When performing list filtering based on user input, use React's `useDeferredValue` to defer the expensive filtering operation while keeping the input responsive.
