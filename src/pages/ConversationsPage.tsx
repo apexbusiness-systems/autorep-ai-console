@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useDeferredValue } from "react";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
 import StatusBadge from "@/components/StatusBadge";
@@ -733,6 +733,12 @@ const ConversationsPage = () => {
     string | null
   >(null);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // ⚡ Bolt Performance Optimization: Defer search query
+  // Prevents the expensive list filtering from blocking the main thread during rapid typing.
+  // Expected impact: Keeps the search input responsive (60fps) even when filtering a large number of conversations.
+  const deferredSearchQuery = useDeferredValue(searchQuery);
+
   const [channelFilter, setChannelFilter] = useState("all");
 
   const selectedConversation = useMemo(
@@ -755,8 +761,8 @@ const ConversationsPage = () => {
     }
 
     // Search filter
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
+    if (deferredSearchQuery.trim()) {
+      const q = deferredSearchQuery.toLowerCase();
       filtered = filtered.filter(
         (c) =>
           c.customerName.toLowerCase().includes(q) ||
@@ -770,7 +776,7 @@ const ConversationsPage = () => {
         new Date(b.lastMessageAt).getTime() -
         new Date(a.lastMessageAt).getTime()
     );
-  }, [conversations, channelFilter, searchQuery]);
+  }, [conversations, channelFilter, deferredSearchQuery]);
 
   function handleSelectConversation(id: string) {
     setSelectedConversationId(id);
