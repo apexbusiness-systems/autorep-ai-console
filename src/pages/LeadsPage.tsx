@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useDeferredValue } from "react";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
 import StatusBadge from "@/components/StatusBadge";
@@ -576,6 +576,7 @@ const LeadsPage = () => {
   const leads = useLeads();
   const followUpTasks = useFollowUpTasks();
   const [searchQuery, setSearchQuery] = useState("");
+  const deferredSearchQuery = useDeferredValue(searchQuery);
 
   // Derived counts & filters
   const hotLeads = useMemo(() => leads.filter((l) => l.priority === "hot"), [leads]);
@@ -607,13 +608,14 @@ const LeadsPage = () => {
   );
 
   // Search filtering
-  // ⚡ Bolt Performance Optimization: Memoized array filter operations
+  // ⚡ Bolt Performance Optimization: Memoized array filter operations with deferred search query
   // Prevents running search filter multiple times on every render (e.g., when switching tabs)
-  // Expected impact: Eliminates O(N) recalculations on unrelated state changes
+  // Defers expensive list filtering from blocking the main thread during rapid typing
+  // Expected impact: Eliminates O(N) recalculations on unrelated state changes and keeps search responsive
   const filterBySearch = useCallback(
     (list: Lead[]) => {
-      if (!searchQuery.trim()) return list;
-      const q = searchQuery.toLowerCase();
+      if (!deferredSearchQuery.trim()) return list;
+      const q = deferredSearchQuery.toLowerCase();
       return list.filter(
         (l) =>
           l.name.toLowerCase().includes(q) ||
@@ -621,7 +623,7 @@ const LeadsPage = () => {
           (SOURCE_LABELS[l.source] ?? l.source).toLowerCase().includes(q)
       );
     },
-    [searchQuery]
+    [deferredSearchQuery]
   );
 
   const filteredAll = useMemo(() => filterBySearch(leads), [filterBySearch, leads]);
