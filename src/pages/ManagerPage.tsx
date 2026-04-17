@@ -929,16 +929,20 @@ function DashboardCharts() {
     return Object.entries(sources).map(([name, value]) => ({ name, value }));
   }, [leads]);
 
+  // ⚡ Bolt Performance Optimization: Extract duplicated O(n) array filter operations
+  // These counts were previously recalculated separately in handlerData and timelineData.
+  // Memoizing them at the component level prevents redundant traversals of the conversations array.
+  const aiHandledCount = useMemo(() => conversations.filter(c => c.currentHandler === 'ai').length, [conversations]);
+  const humanHandledCount = useMemo(() => conversations.filter(c => c.currentHandler === 'human').length, [conversations]);
+
   // AI vs Human Handle Rate
   const handlerData = useMemo(() => {
-    const aiCount = conversations.filter(c => c.currentHandler === 'ai').length;
-    const humanCount = conversations.filter(c => c.currentHandler === 'human').length;
-    const total = aiCount + humanCount || 1;
+    const total = aiHandledCount + humanHandledCount || 1;
     return [
-      { name: 'AI Handled', value: Math.round((aiCount / total) * 100), count: aiCount },
-      { name: 'Human Handled', value: Math.round((humanCount / total) * 100), count: humanCount },
+      { name: 'AI Handled', value: Math.round((aiHandledCount / total) * 100), count: aiHandledCount },
+      { name: 'Human Handled', value: Math.round((humanHandledCount / total) * 100), count: humanHandledCount },
     ];
-  }, [conversations]);
+  }, [aiHandledCount, humanHandledCount]);
 
   // Sentiment Distribution
   const sentimentData = useMemo(() => {
@@ -969,8 +973,8 @@ function DashboardCharts() {
     { time: '9AM', ai: 12, human: 2, leads: 4 },
     { time: '10AM', ai: 15, human: 2, leads: 6 },
     { time: '11AM', ai: 18, human: 3, leads: 7 },
-    { time: 'Now', ai: conversations.filter(c => c.currentHandler === 'ai').length + 18, human: conversations.filter(c => c.currentHandler === 'human').length + 3, leads: leads.length + 5 },
-  ], [conversations, leads]);
+    { time: 'Now', ai: aiHandledCount + 18, human: humanHandledCount + 3, leads: leads.length + 5 },
+  ], [aiHandledCount, humanHandledCount, leads.length]);
 
   return (
     <div className="space-y-6 animate-fade-in-up">

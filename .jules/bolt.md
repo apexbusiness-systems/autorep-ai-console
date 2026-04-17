@@ -13,3 +13,6 @@
 ## 2026-04-10 - Deferred Search Queries
 **Learning:** Found that `searchQuery` in `ConversationsPage` was directly tied to a `useMemo` block that filtered a list synchronously on every keystroke, leading to possible UI stuttering.
 **Action:** When performing list filtering based on user input, use React's `useDeferredValue` to defer the expensive filtering operation while keeping the input responsive.
+## 2025-04-17 - Avoid duplicated inline array traversals in different useMemo blocks
+**Learning:** Found that `ManagerPage` was recalculating the same O(N) array `.filter` operations for `aiCount` and `humanCount` multiple times across different `useMemo` hooks (`handlerData` and `timelineData`).
+**Action:** When the same derived array calculation is needed by multiple sibling component states, extract it into its own component-level `useMemo` hook and pass it as a dependency, preventing redundant traversals.
