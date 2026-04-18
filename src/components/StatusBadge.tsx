@@ -19,25 +19,40 @@ interface StatusBadgeProps {
   status: StatusType;
   label?: string;
   className?: string;
+  iconOnly?: boolean;
 }
 
-const StatusBadge = ({ status, label, className }: StatusBadgeProps) => (
-  <span className={cn(
-    "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium border",
-    statusStyles[status],
-    className
-  )}>
-    <span className={cn("w-1.5 h-1.5 rounded-full", {
-      "bg-green-400": status === "active" || status === "connected",
-      "bg-yellow-400": status === "pending" || status === "warm",
-      "bg-gray-400": status === "idle",
-      "bg-red-400": status === "error" || status === "disconnected",
-      "bg-blue-400": status === "new",
-      "bg-orange-400": status === "hot",
-      "bg-slate-400": status === "cold",
-    })} />
-    {label || status}
-  </span>
-);
+const minimalistStatuses: StatusType[] = ["new", "hot", "warm", "cold"];
+
+const StatusBadge = ({ status, label, className, iconOnly }: StatusBadgeProps) => {
+  // Keep priority pills iconized globally unless callers explicitly set label text.
+  const shouldIconize = iconOnly || (!label && minimalistStatuses.includes(status));
+
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center border",
+        shouldIconize
+          ? "justify-center w-12 h-6 rounded-full"
+          : "gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium",
+        statusStyles[status],
+        className,
+      )}
+      aria-label={label || status}
+      title={label || status}
+    >
+      <span className={cn(shouldIconize ? "w-2 h-2" : "w-1.5 h-1.5", "rounded-full", {
+        "bg-green-400": status === "active" || status === "connected",
+        "bg-yellow-400": status === "pending" || status === "warm",
+        "bg-gray-400": status === "idle",
+        "bg-red-400": status === "error" || status === "disconnected",
+        "bg-blue-400": status === "new",
+        "bg-orange-400": status === "hot",
+        "bg-slate-400": status === "cold",
+      })} />
+      {!shouldIconize && (label || status)}
+    </span>
+  );
+};
 
 export default StatusBadge;
