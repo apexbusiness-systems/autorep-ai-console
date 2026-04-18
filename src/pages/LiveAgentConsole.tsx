@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { getVehicleImage } from "@/data/vehicle-images";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
@@ -52,6 +52,11 @@ const LiveAgentConsole = () => {
   const quotes = useQuotes();
   const [inputValue, setInputValue] = useState('');
   const [channelFilter, setChannelFilter] = useState<string>('all');
+  const [isTakeover, setIsTakeover] = useState(false);
+  const [mobilePane, setMobilePane] = useState<'queue' | 'chat' | 'context'>('chat');
+  const [approvedMessageIds, setApprovedMessageIds] = useState<Record<string, boolean>>({});
+  const [isCompactLayout, setIsCompactLayout] = useState(false);
+  const autoReplyTimeout = useRef<number | null>(null);
 
   const activeConv = useMemo(() =>
     conversations.find(c => c.id === activeConvId) || null,
@@ -82,15 +87,63 @@ const LiveAgentConsole = () => {
     messages.filter(m => m.role !== 'system'),
   [messages]);
 
+  useEffect(() => {
+    const query = window.matchMedia('(max-width: 1279px)');
+    const updateLayout = () => setIsCompactLayout(query.matches);
+    updateLayout();
+    query.addEventListener('change', updateLayout);
+    return () => query.removeEventListener('change', updateLayout);
+  }, []);
+
+  useEffect(() => {
+    if (!isCompactLayout) return;
+    setMobilePane(activeConvId ? 'chat' : 'queue');
+  }, [activeConvId, isCompactLayout]);
+
+  useEffect(() => () => {
+    if (autoReplyTimeout.current) {
+      window.clearTimeout(autoReplyTimeout.current);
+    }
+  }, []);
+
   const handleSend = () => {
     if (!inputValue.trim() || !activeConvId) return;
+    const outbound = inputValue.trim();
     const msg: Message = {
       id: `msg-${Date.now()}`, conversationId: activeConvId, role: 'manager',
-      content: inputValue, timestamp: new Date().toISOString(), channel: activeConv?.channel || 'web',
+      content: outbound, timestamp: new Date().toISOString(), channel: activeConv?.channel || 'web',
       delivered: true, read: false, aiGenerated: false, requiresApproval: false,
     };
     addMessage(activeConvId, msg);
     setInputValue('');
+
+    if (autoReplyTimeout.current) window.clearTimeout(autoReplyTimeout.current);
+    // Simulate an immediate customer acknowledgment so the demo always feels alive.
+    autoReplyTimeout.current = window.setTimeout(() => {
+      const reply: Message = {
+        id: `msg-auto-${Date.now()}`,
+        conversationId: activeConvId,
+        role: 'customer',
+        content: `Got it — "${outbound.slice(0, 42)}${outbound.length > 42 ? '…' : ''}". Can you also share the best payment option?`,
+        timestamp: new Date().toISOString(),
+        channel: activeConv?.channel || 'web',
+        delivered: true,
+        read: false,
+        aiGenerated: false,
+        requiresApproval: false,
+      };
+      addMessage(activeConvId, reply);
+    }, 1400);
+  };
+
+  const handleUseSuggestedResponse = (content: string) => {
+    setInputValue(content);
+    if (isCompactLayout) setMobilePane('chat');
+  };
+
+  const handleQueueSelect = (id: string) => {
+    setActiveConversation(id);
+    if (isCompactLayout) setMobilePane('chat');
   };
 
   return (
@@ -99,18 +152,32 @@ const LiveAgentConsole = () => {
         title="Live Agent Console"
         subtitle="Active AI conversations and inbound queue"
         actions={
-          <div className="flex items-center gap-3">
-            <StatusBadge status="active" label="AI Agent Online" />
-            <Button variant="gold" size="sm">
-              <HandMetal className="w-4 h-4 mr-1" /> Take Over
+          <div className="flex items-center gap-2 sm:gap-3">
+            <StatusBadge status={isTakeover ? "pending" : "active"} label={isTakeover ? "Manual Takeover" : "AI Agent Online"} />
+            <Button variant="gold" size="sm" onClick={() => setIsTakeover(prev => !prev)}>
+              <HandMetal className="w-4 h-4 mr-1" /> {isTakeover ? "Return to AI" : "Take Over"}
             </Button>
           </div>
         }
       />
 
-      <div className="flex flex-1 h-[calc(100vh-73px)]">
+      <div className="flex flex-col xl:hidden border-b border-border px-3 py-2 gap-2">
+        <div className="grid grid-cols-3 gap-2">
+          <Button variant={mobilePane === 'queue' ? 'gold' : 'secondary'} size="sm" className="text-xs" onClick={() => setMobilePane('queue')}>
+            Queue ({filteredConversations.length})
+          </Button>
+          <Button variant={mobilePane === 'chat' ? 'gold' : 'secondary'} size="sm" className="text-xs" onClick={() => setMobilePane('chat')}>
+            Conversation
+          </Button>
+          <Button variant={mobilePane === 'context' ? 'gold' : 'secondary'} size="sm" className="text-xs" onClick={() => setMobilePane('context')} disabled={!activeConv}>
+            Context
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex flex-1 h-[calc(100vh-73px)] xl:h-[calc(100vh-73px)]">
         {/* Inbound Queue */}
-        <div className="w-[280px] border-r border-border flex flex-col">
+        <div className={`w-full xl:w-[280px] border-r border-border flex flex-col ${mobilePane !== 'queue' ? 'hidden xl:flex' : ''}`}>
           <div className="px-3 pt-3 pb-2 border-b border-border space-y-2">
             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">Inbound Queue</h3>
             <div className="flex gap-1">
@@ -128,7 +195,7 @@ const LiveAgentConsole = () => {
               const isActive = conv.id === activeConvId;
               return (
                 <div key={conv.id}
-                  onClick={() => setActiveConversation(conv.id)}
+                  onClick={() => handleQueueSelect(conv.id)}
                   className={`flex items-start gap-3 px-4 py-3 border-b border-border cursor-pointer transition-colors ${isActive ? 'bg-gold/5 border-l-2 border-l-gold' : 'hover:bg-secondary/30'}`}>
                   <div className="flex items-center justify-center w-8 h-8 rounded-full bg-secondary mt-0.5">
                     <Icon className="w-4 h-4 text-muted-foreground" />
@@ -152,11 +219,11 @@ const LiveAgentConsole = () => {
         </div>
 
         {/* Main Conversation */}
-        <div className="flex-1 flex flex-col">
+        <div className={`flex-1 flex flex-col min-w-0 ${mobilePane !== 'chat' ? 'hidden xl:flex' : ''}`}>
           {activeConv ? (
             <>
-              <div className="flex items-center justify-between px-5 py-3 border-b border-border">
-                <div className="flex items-center gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-3 sm:px-5 py-3 border-b border-border">
+                <div className="flex items-center gap-3 min-w-0">
                   <div className="w-9 h-9 rounded-full bg-gold/20 flex items-center justify-center">
                     <User className="w-4 h-4 text-gold" />
                   </div>
@@ -165,14 +232,14 @@ const LiveAgentConsole = () => {
                       <span className="text-sm font-semibold text-foreground">{activeConv.customerName}</span>
                       <StatusBadge status={activeConv.status === 'active' ? 'active' : activeConv.status === 'escalated' ? 'error' : 'pending'} label={activeConv.status === 'escalated' ? 'Escalated' : 'Live'} />
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                       {(() => { const I = channelIcons[activeConv.channel]; return <I className="w-3 h-3" />; })()}
                       {activeConv.channel === 'phone' ? 'Inbound Call' : activeConv.channel.toUpperCase()} · {activeConv.customerPhone}
                       {activeConv.duration && <span>· {activeConv.duration}</span>}
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 self-end sm:self-auto">
                   <Button variant="ghost" size="sm"><Mic className="w-4 h-4" /></Button>
                   <Button variant="gold-outline" size="sm">Send Quote</Button>
                   <Button variant="ghost" size="sm"><Calendar className="w-4 h-4" /></Button>
@@ -187,23 +254,23 @@ const LiveAgentConsole = () => {
                 </div>
               )}
 
-              <div className="flex-1 overflow-auto px-5 py-4 space-y-4">
+              <div className="flex-1 overflow-auto px-3 sm:px-5 py-4 space-y-4">
                 {messages.map((msg) => (
                   <div key={msg.id} className={`flex ${msg.role === 'agent' || msg.role === 'manager' ? 'justify-start' : msg.role === 'system' ? 'justify-center' : 'justify-end'}`}>
                     {msg.role === 'system' ? (
                       <div className="px-3 py-1.5 rounded-full bg-secondary/50 text-[10px] text-muted-foreground">{msg.content}</div>
                     ) : (
-                      <div className={`max-w-[70%] rounded-xl px-4 py-2.5 ${msg.role === 'customer' ? 'bg-gold/10 text-foreground border border-gold/15' : 'bg-secondary text-secondary-foreground'}`}>
+                      <div className={`max-w-[88%] sm:max-w-[70%] rounded-xl px-4 py-2.5 ${msg.role === 'customer' ? 'bg-gold/10 text-foreground border border-gold/15' : 'bg-secondary text-secondary-foreground'}`}>
                         {msg.aiGenerated && <span className="text-[9px] font-semibold text-gold/60 uppercase tracking-wider">AI</span>}
                         <p className="text-sm leading-relaxed">{msg.content}</p>
                         <div className="flex items-center gap-2 mt-1">
                           <span className="text-[10px] text-muted-foreground">{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                           {msg.delivered && <CheckCircle className="w-2.5 h-2.5 text-muted-foreground/50" />}
                         </div>
-                        {msg.requiresApproval && !msg.approved && (
+                        {msg.requiresApproval && !msg.approved && !approvedMessageIds[msg.id] && (
                           <div className="flex gap-2 mt-2 pt-2 border-t border-border">
-                            <Button variant="gold" size="sm" className="text-[10px] h-6 px-2">Approve</Button>
-                            <Button variant="secondary" size="sm" className="text-[10px] h-6 px-2">Edit</Button>
+                            <Button variant="gold" size="sm" className="text-[10px] h-6 px-2" onClick={() => setApprovedMessageIds(prev => ({ ...prev, [msg.id]: true }))}>Approve</Button>
+                            <Button variant="secondary" size="sm" className="text-[10px] h-6 px-2" onClick={() => handleUseSuggestedResponse(msg.content)}>Edit</Button>
                           </div>
                         )}
                       </div>
@@ -212,7 +279,7 @@ const LiveAgentConsole = () => {
                 ))}
               </div>
 
-              <div className="px-5 py-3 border-t border-border">
+              <div className="px-3 sm:px-5 py-3 border-t border-border">
                 <div className="flex items-center gap-2">
                   <div className="flex-1 flex items-center bg-secondary rounded-lg px-4 py-2.5">
                     <input
@@ -228,7 +295,7 @@ const LiveAgentConsole = () => {
                   </Button>
                 </div>
                 <p className="text-[10px] text-muted-foreground mt-1.5 flex items-center gap-1">
-                  <span className="status-dot status-active" /> AI handling · Will auto-respond in 3s unless you type
+                  <span className={`status-dot ${isTakeover ? 'status-pending' : 'status-active'}`} /> {isTakeover ? 'Manual control enabled' : 'AI handling'} · Mock customer auto-replies after each send
                 </p>
               </div>
             </>
@@ -247,7 +314,7 @@ const LiveAgentConsole = () => {
 
         {/* Right Panel */}
         {activeConv && (
-          <div className="w-[340px] border-l border-border overflow-auto">
+          <div className={`w-full xl:w-[340px] border-l border-border overflow-auto ${mobilePane !== 'context' ? 'hidden xl:block' : ''}`}>
             <Tabs defaultValue="snapshot" className="w-full">
               <TabsList className="w-full rounded-none border-b border-border bg-transparent px-2 pt-2">
                 <TabsTrigger value="snapshot" className="text-xs">Snapshot</TabsTrigger>
@@ -291,7 +358,7 @@ const LiveAgentConsole = () => {
                       ? 'Address price objection with alternative payment scenarios.'
                       : 'Continue engagement and move toward next milestone.'}
                   </p>
-                  <Button variant="gold" size="sm" className="mt-2 w-full text-xs">
+                  <Button variant="gold" size="sm" className="mt-2 w-full text-xs" onClick={() => handleUseSuggestedResponse('Based on your goals, I recommend we lock in a same-day test drive and send a side-by-side payment summary now.')}>
                     Execute <ArrowRight className="w-3 h-3 ml-1" />
                   </Button>
                 </div>
@@ -317,9 +384,9 @@ const LiveAgentConsole = () => {
                   <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Quick Actions</h4>
                   <div className="grid grid-cols-2 gap-2">
                     <Button variant="secondary" size="sm" className="text-xs justify-start"><Calendar className="w-3 h-3 mr-1" /> Book Apt</Button>
-                    <Button variant="secondary" size="sm" className="text-xs justify-start"><FileText className="w-3 h-3 mr-1" /> Finance</Button>
-                    <Button variant="secondary" size="sm" className="text-xs justify-start"><Car className="w-3 h-3 mr-1" /> Add Vehicle</Button>
-                    <Button variant="secondary" size="sm" className="text-xs justify-start"><HandMetal className="w-3 h-3 mr-1" /> Handoff</Button>
+                    <Button variant="secondary" size="sm" className="text-xs justify-start" onClick={() => handleUseSuggestedResponse('Great, I can get your finance pre-check started in under 2 minutes. Want me to text the secure intake link now?')}><FileText className="w-3 h-3 mr-1" /> Finance</Button>
+                    <Button variant="secondary" size="sm" className="text-xs justify-start" onClick={() => handleUseSuggestedResponse('I can line up two alternatives with similar payments and better availability. Do you prefer SUV or truck?')}><Car className="w-3 h-3 mr-1" /> Add Vehicle</Button>
+                    <Button variant="secondary" size="sm" className="text-xs justify-start" onClick={() => setIsTakeover(true)}><HandMetal className="w-3 h-3 mr-1" /> Handoff</Button>
                   </div>
                 </div>
               </TabsContent>
@@ -381,7 +448,7 @@ const LiveAgentConsole = () => {
                       <span className="text-xs font-semibold text-foreground">{o.trigger}</span>
                     </div>
                     <p className="text-xs text-muted-foreground leading-relaxed">{o.response}</p>
-                    <Button variant="gold-outline" size="sm" className="text-[10px] w-full">Use This Response</Button>
+                    <Button variant="gold-outline" size="sm" className="text-[10px] w-full" onClick={() => handleUseSuggestedResponse(o.response)}>Use This Response</Button>
                   </div>
                 ))}
               </TabsContent>
