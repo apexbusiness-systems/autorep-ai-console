@@ -153,7 +153,7 @@ const LiveAgentConsole = () => {
         subtitle="Active AI conversations and inbound queue"
         actions={
           <div className="flex items-center gap-2 sm:gap-3">
-            <StatusBadge status={isTakeover ? "pending" : "active"} label={isTakeover ? "Manual Takeover" : "AI Agent Online"} />
+            <StatusBadge status={isTakeover ? "pending" : "active"} iconOnly />
             <Button variant="gold" size="sm" onClick={() => setIsTakeover(prev => !prev)}>
               <HandMetal className="w-4 h-4 mr-1" /> {isTakeover ? "Return to AI" : "Take Over"}
             </Button>
