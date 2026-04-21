@@ -475,13 +475,23 @@ function StaleReactivationSection({ leads }: { leads: Lead[] }) {
 // ─── Proactive Outreach Queue ─────────────────────────────────────────────────
 
 function ProactiveOutreachQueue({ tasks }: { tasks: FollowUpTask[] }) {
+  // ⚡ Bolt Performance Optimization: Single-pass array reduction
+  // Replaced multiple O(N) array .filter() operations with a single pass O(N) loop
+  // Expected impact: Reduces CPU cycles and memory allocations when processing large lists
   const grouped = useMemo(() => {
-    const callbacks = tasks.filter((t) => t.type === "callback");
-    const quotes = tasks.filter((t) => t.type === "quote_follow_up");
-    const appointments = tasks.filter((t) => t.type === "appointment_reminder");
-    const other = tasks.filter(
-      (t) => !["callback", "quote_follow_up", "appointment_reminder"].includes(t.type)
-    );
+    const callbacks: FollowUpTask[] = [];
+    const quotes: FollowUpTask[] = [];
+    const appointments: FollowUpTask[] = [];
+    const other: FollowUpTask[] = [];
+
+    for (let i = 0; i < tasks.length; i++) {
+      const t = tasks[i];
+      if (t.type === "callback") callbacks.push(t);
+      else if (t.type === "quote_follow_up") quotes.push(t);
+      else if (t.type === "appointment_reminder") appointments.push(t);
+      else other.push(t);
+    }
+
     return { callbacks, quotes, appointments, other };
   }, [tasks]);
 
@@ -581,31 +591,29 @@ const LeadsPage = () => {
   // Derived counts & filters
   const hotLeads = useMemo(() => leads.filter((l) => l.priority === "hot"), [leads]);
   const staleLeads = useMemo(() => leads.filter((l) => l.stage === "stale"), [leads]);
-  const followUpsDue = useMemo(
-    () => followUpTasks.filter((t) => t.status === "overdue" || t.status === "due"),
-    [followUpTasks]
-  );
+  // ⚡ Bolt Performance Optimization: Single-pass array reduction
+  // Replaced multiple O(N) array .filter() operations with a single pass O(N) loop
+  // Expected impact: Reduces CPU cycles and memory allocations when processing large lists
+  const { followUpsDue, activeTasks, reactivationTasks, proactiveTasks } = useMemo(() => {
+    const due: typeof followUpTasks = [];
+    const active: typeof followUpTasks = [];
+    const reactivation: typeof followUpTasks = [];
+    const proactive: typeof followUpTasks = [];
 
-  const activeTasks = useMemo(
-    () => followUpTasks.filter((t) => t.status !== "completed" && t.status !== "cancelled"),
-    [followUpTasks]
-  );
+    for (let i = 0; i < followUpTasks.length; i++) {
+      const t = followUpTasks[i];
+      if (t.status === "overdue" || t.status === "due") due.push(t);
+      if (t.status !== "completed" && t.status !== "cancelled") {
+        active.push(t);
+        if (t.type === "reactivation") reactivation.push(t);
+        if (["callback", "quote_follow_up", "appointment_reminder"].includes(t.type)) {
+          proactive.push(t);
+        }
+      }
+    }
 
-  const reactivationTasks = useMemo(
-    () => followUpTasks.filter((t) => t.type === "reactivation" && t.status !== "completed" && t.status !== "cancelled"),
-    [followUpTasks]
-  );
-
-  const proactiveTasks = useMemo(
-    () =>
-      followUpTasks.filter(
-        (t) =>
-          ["callback", "quote_follow_up", "appointment_reminder"].includes(t.type) &&
-          t.status !== "completed" &&
-          t.status !== "cancelled"
-      ),
-    [followUpTasks]
-  );
+    return { followUpsDue: due, activeTasks: active, reactivationTasks: reactivation, proactiveTasks: proactive };
+  }, [followUpTasks]);
 
   // Search filtering
   // ⚡ Bolt Performance Optimization: Memoized array filter operations with deferred search query

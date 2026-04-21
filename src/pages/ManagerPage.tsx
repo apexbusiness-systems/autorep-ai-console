@@ -711,13 +711,27 @@ function CompliancePanel({
 }) {
   const totalConvos = conversations.length || 1;
 
+  // ⚡ Bolt Performance Optimization: Single-pass array reduction
+  // Replaced multiple O(N) array .filter() operations with a single pass O(N) loop
+  // Expected impact: Reduces CPU cycles and memory allocations when processing large lists
   const complianceData = useMemo(() => {
-    return {
-      disclosureSent: conversations.filter((c) => c.aiDisclosureSent).length,
-      optOutHandled: conversations.filter((c) => c.optedOut).length,
-      flaggedConvos: conversations.filter((c) => c.escalationFlag).length,
-      openEscalations: escalations.filter((e) => e.status === "open").length,
-    };
+    let disclosureSent = 0;
+    let optOutHandled = 0;
+    let flaggedConvos = 0;
+    let openEscalations = 0;
+
+    for (let i = 0; i < conversations.length; i++) {
+      const c = conversations[i];
+      if (c.aiDisclosureSent) disclosureSent++;
+      if (c.optedOut) optOutHandled++;
+      if (c.escalationFlag) flaggedConvos++;
+    }
+
+    for (let i = 0; i < escalations.length; i++) {
+      if (escalations[i].status === "open") openEscalations++;
+    }
+
+    return { disclosureSent, optOutHandled, flaggedConvos, openEscalations };
   }, [conversations, escalations]);
 
   const disclosureRate =
@@ -929,11 +943,18 @@ function DashboardCharts() {
     return Object.entries(sources).map(([name, value]) => ({ name, value }));
   }, [leads]);
 
-  // ⚡ Bolt Performance Optimization: Extract duplicated O(n) array filter operations
-  // These counts were previously recalculated separately in handlerData and timelineData.
-  // Memoizing them at the component level prevents redundant traversals of the conversations array.
-  const aiHandledCount = useMemo(() => conversations.filter(c => c.currentHandler === 'ai').length, [conversations]);
-  const humanHandledCount = useMemo(() => conversations.filter(c => c.currentHandler === 'human').length, [conversations]);
+  // ⚡ Bolt Performance Optimization: Single-pass array reduction
+  // Replaced multiple O(N) array .filter() operations with a single pass O(N) loop
+  // Expected impact: Reduces CPU cycles and memory allocations when processing large lists
+  const { aiHandledCount, humanHandledCount } = useMemo(() => {
+    let ai = 0;
+    let human = 0;
+    for (let i = 0; i < conversations.length; i++) {
+      if (conversations[i].currentHandler === 'ai') ai++;
+      else if (conversations[i].currentHandler === 'human') human++;
+    }
+    return { aiHandledCount: ai, humanHandledCount: human };
+  }, [conversations]);
 
   // AI vs Human Handle Rate
   const handlerData = useMemo(() => {
@@ -1132,20 +1153,27 @@ const ManagerPage = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
 
   // Computed counts
-  // ⚡ Bolt Performance Optimization: Memoized expensive array filter operations
-  // Prevents recalculating these counts on every render (e.g., when switching tabs)
-  // Expected impact: Eliminates O(N) recalculations on unrelated state changes
-  const activeAiCount = useMemo(() => conversations.filter(
-    (c) => c.currentHandler === "ai" && c.status === "active"
-  ).length, [conversations]);
+  // ⚡ Bolt Performance Optimization: Single-pass array reduction
+  // Replaced multiple O(N) array .filter() operations with a single pass O(N) loop
+  // Expected impact: Reduces CPU cycles and memory allocations when processing large lists
+  const { activeAiCount, humanHandledCount } = useMemo(() => {
+    let activeAi = 0;
+    let humanHandled = 0;
+    for (let i = 0; i < conversations.length; i++) {
+      const c = conversations[i];
+      if (c.currentHandler === "ai" && c.status === "active") activeAi++;
+      if (c.currentHandler === "human") humanHandled++;
+    }
+    return { activeAiCount: activeAi, humanHandledCount: humanHandled };
+  }, [conversations]);
 
-  const humanHandledCount = useMemo(() => conversations.filter(
-    (c) => c.currentHandler === "human"
-  ).length, [conversations]);
-
-  const openEscalationCount = useMemo(() => escalations.filter(
-    (e) => e.status === "open"
-  ).length, [escalations]);
+  const openEscalationCount = useMemo(() => {
+    let openCount = 0;
+    for (let i = 0; i < escalations.length; i++) {
+      if (escalations[i].status === "open") openCount++;
+    }
+    return openCount;
+  }, [escalations]);
 
   const handleViewTranscript = (conversationId: string) => {
     setSelectedConversationId(conversationId);
