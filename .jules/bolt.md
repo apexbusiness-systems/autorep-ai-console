@@ -16,3 +16,6 @@
 ## 2025-04-17 - Avoid duplicated inline array traversals in different useMemo blocks
 **Learning:** Found that `ManagerPage` was recalculating the same O(N) array `.filter` operations for `aiCount` and `humanCount` multiple times across different `useMemo` hooks (`handlerData` and `timelineData`).
 **Action:** When the same derived array calculation is needed by multiple sibling component states, extract it into its own component-level `useMemo` hook and pass it as a dependency, preventing redundant traversals.
+## 2025-04-18 - Single-pass array reduction instead of multiple .filter() calls
+**Learning:** Found that pages like `ManagerPage`, `LeadsPage`, and `FinancePage` were chaining multiple `.filter().length` or similar operations on the same large array (e.g., `conversations`, `followUpTasks`, `packets`) sequentially inside `useMemo` hooks. This caused multiple O(N) traversals and redundant array allocations.
+**Action:** When deriving multiple subsets or counts from the same list, replace multiple `.filter()` calls with a single-pass `for` loop to categorize or count items simultaneously. This prevents redundant O(N) array traversals and reduces intermediate memory allocations.

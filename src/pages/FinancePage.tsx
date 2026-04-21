@@ -22,12 +22,25 @@ const FinancePage = () => {
     auditEvents.filter(e => ['consent_captured', 'disclosure_sent', 'finance_submitted', 'document_received', 'packet_routed'].includes(e.action)),
   [auditEvents]);
 
-  const summaryCards = useMemo(() => ({
-    active: packets.filter(p => p.status === 'in_progress').length,
-    awaitingConsent: packets.filter(p => p.status === 'pending_consent').length,
-    ready: packets.filter(p => p.status === 'ready').length,
-    submitted: packets.filter(p => p.routingStatus === 'submitted' || p.routingStatus === 'accepted').length,
-  }), [packets]);
+  // ⚡ Bolt Performance Optimization: Single-pass array reduction
+  // Replaced multiple O(N) array .filter() operations with a single pass O(N) loop
+  // Expected impact: Reduces CPU cycles and memory allocations when processing large lists
+  const summaryCards = useMemo(() => {
+    let active = 0;
+    let awaitingConsent = 0;
+    let ready = 0;
+    let submitted = 0;
+
+    for (let i = 0; i < packets.length; i++) {
+      const p = packets[i];
+      if (p.status === 'in_progress') active++;
+      if (p.status === 'pending_consent') awaitingConsent++;
+      if (p.status === 'ready') ready++;
+      if (p.routingStatus === 'submitted' || p.routingStatus === 'accepted') submitted++;
+    }
+
+    return { active, awaitingConsent, ready, submitted };
+  }, [packets]);
 
   const getLeadName = (leadId: string) => leads.find(l => l.id === leadId)?.name || 'Unknown';
 
