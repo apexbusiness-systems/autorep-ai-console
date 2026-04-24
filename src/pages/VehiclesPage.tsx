@@ -38,20 +38,41 @@ const VehiclesPage = () => {
   // ⚡ Bolt Performance Optimization: Deferred Search Queries
   // Defers expensive list filtering from blocking the main thread during rapid typing
   // Expected impact: Eliminates O(N) recalculations on unrelated state changes and keeps search responsive (60fps)
+
+  // ⚡ Bolt Performance Optimization: Single-pass array reduction
+  // Replaced multiple chained .filter() operations with a single pass to prevent redundant O(N) traversals and intermediate array allocations.
   const filtered = useMemo(() => {
-    let result = vehicles;
+    let q = '';
     if (deferredSearchQuery) {
-      const q = deferredSearchQuery.toLowerCase();
-      result = result.filter(v => `${v.year} ${v.make} ${v.model} ${v.trim} ${v.stock}`.toLowerCase().includes(q));
+      q = deferredSearchQuery.toLowerCase();
     }
-    if (bodyFilter !== 'All') result = result.filter(v => v.body === bodyFilter);
-    if (statusFilter !== 'All') result = result.filter(v => v.status === statusFilter.toLowerCase());
+
+    let minPrice = 0;
+    let maxPrice = 999999;
     if (budgetFilter !== 'Any') {
       const ranges: Record<string, [number, number]> = { 'Under $25K': [0, 25000], '$25K–$35K': [25000, 35000], '$35K–$50K': [35000, 50000], '$50K+': [50000, 999999] };
-      const [min, max] = ranges[budgetFilter] || [0, 999999];
-      result = result.filter(v => v.price >= min && v.price <= max);
+      const range = ranges[budgetFilter] || [0, 999999];
+      minPrice = range[0];
+      maxPrice = range[1];
     }
-    return result;
+    const searchBody = bodyFilter !== 'All';
+    const searchStatus = statusFilter !== 'All';
+
+    return vehicles.filter(v => {
+      if (q && !`${v.year} ${v.make} ${v.model} ${v.trim} ${v.stock}`.toLowerCase().includes(q)) {
+        return false;
+      }
+      if (searchBody && v.body !== bodyFilter) {
+        return false;
+      }
+      if (searchStatus && v.status !== statusFilter.toLowerCase()) {
+        return false;
+      }
+      if (v.price < minPrice || v.price > maxPrice) {
+        return false;
+      }
+      return true;
+    });
   }, [vehicles, deferredSearchQuery, bodyFilter, budgetFilter, statusFilter]);
 
   const builderVehicle = builderVehicleId ? vehicles.find(v => v.id === builderVehicleId) : null;

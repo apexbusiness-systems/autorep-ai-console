@@ -746,32 +746,37 @@ const ConversationsPage = () => {
     [conversations, selectedConversationId]
   );
 
+  // ⚡ Bolt Performance Optimization: Single-pass array reduction
+  // Replaced multiple chained .filter() operations with a single pass to prevent redundant O(N) traversals and intermediate array allocations.
   const filteredConversations = useMemo(() => {
-    let filtered = conversations;
-
-    // Channel filter
-    if (channelFilter !== "all") {
-      if (channelFilter === "social") {
-        filtered = filtered.filter(
-          (c) => c.channel === "facebook" || c.channel === "instagram"
-        );
-      } else {
-        filtered = filtered.filter((c) => c.channel === channelFilter);
-      }
-    }
-
-    // Search filter
+    let q = "";
     if (deferredSearchQuery.trim()) {
-      const q = deferredSearchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (c) =>
-          c.customerName.toLowerCase().includes(q) ||
-          (c.summary && c.summary.toLowerCase().includes(q))
-      );
+      q = deferredSearchQuery.toLowerCase();
     }
+
+    const filtered = conversations.filter(c => {
+      // Channel filter
+      if (channelFilter !== "all") {
+        if (channelFilter === "social") {
+          if (c.channel !== "facebook" && c.channel !== "instagram") {
+            return false;
+          }
+        } else if (c.channel !== channelFilter) {
+          return false;
+        }
+      }
+
+      // Search filter
+      if (q) {
+        if (!c.customerName.toLowerCase().includes(q) && !(c.summary && c.summary.toLowerCase().includes(q))) {
+            return false;
+        }
+      }
+      return true;
+    });
 
     // Sort by last message time, most recent first
-    return [...filtered].sort(
+    return filtered.sort(
       (a, b) =>
         new Date(b.lastMessageAt).getTime() -
         new Date(a.lastMessageAt).getTime()
