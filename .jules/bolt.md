@@ -19,3 +19,6 @@
 ## 2025-04-18 - Single-pass array reduction instead of multiple .filter() calls
 **Learning:** Found that pages like `ManagerPage`, `LeadsPage`, and `FinancePage` were chaining multiple `.filter().length` or similar operations on the same large array (e.g., `conversations`, `followUpTasks`, `packets`) sequentially inside `useMemo` hooks. This caused multiple O(N) traversals and redundant array allocations.
 **Action:** When deriving multiple subsets or counts from the same list, replace multiple `.filter()` calls with a single-pass `for` loop to categorize or count items simultaneously. This prevents redundant O(N) array traversals and reduces intermediate memory allocations.
+## 2026-04-10 - Single-Pass Array Filtering Optimization
+**Learning:** Found that `VehiclesPage` was applying multiple filtering criteria to a list using chained `.filter()` calls, leading to redundant O(N) traversals and intermediate memory allocations.
+**Action:** When applying multiple filtering criteria to a list, combine them into a single `.filter()` pass containing all conditional checks instead of chained `.filter()` calls. This prevents redundant O(N) traversals and intermediate memory allocations.
