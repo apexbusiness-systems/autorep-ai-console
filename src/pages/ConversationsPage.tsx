@@ -746,28 +746,33 @@ const ConversationsPage = () => {
     [conversations, selectedConversationId]
   );
 
+  // ⚡ Bolt Performance Optimization: Single-pass array filtering
+  // Replaced multiple chained `.filter()` calls with a single-pass filter
+  // Expected impact: Reduces CPU cycles and memory allocations when filtering a large list of conversations
   const filteredConversations = useMemo(() => {
     let filtered = conversations;
+    const q = deferredSearchQuery.trim().toLowerCase();
 
-    // Channel filter
-    if (channelFilter !== "all") {
-      if (channelFilter === "social") {
-        filtered = filtered.filter(
-          (c) => c.channel === "facebook" || c.channel === "instagram"
-        );
-      } else {
-        filtered = filtered.filter((c) => c.channel === channelFilter);
-      }
-    }
+    if (channelFilter !== "all" || q) {
+      filtered = conversations.filter((c) => {
+        if (channelFilter !== "all") {
+          if (channelFilter === "social" && !(c.channel === "facebook" || c.channel === "instagram")) {
+            return false;
+          } else if (channelFilter !== "social" && c.channel !== channelFilter) {
+            return false;
+          }
+        }
 
-    // Search filter
-    if (deferredSearchQuery.trim()) {
-      const q = deferredSearchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (c) =>
-          c.customerName.toLowerCase().includes(q) ||
-          (c.summary && c.summary.toLowerCase().includes(q))
-      );
+        if (q) {
+          const matchesName = c.customerName.toLowerCase().includes(q);
+          const matchesSummary = c.summary && c.summary.toLowerCase().includes(q);
+          if (!matchesName && !matchesSummary) {
+            return false;
+          }
+        }
+
+        return true;
+      });
     }
 
     // Sort by last message time, most recent first
