@@ -747,31 +747,36 @@ const ConversationsPage = () => {
   );
 
   const filteredConversations = useMemo(() => {
-    let filtered = conversations;
+    // ⚡ Bolt Performance Optimization: Single-pass array filtering and invariant extraction
+    // Replaced multiple chained `.filter()` calls with a single-pass filter.
+    // Moved loop-invariant variables (e.g. `deferredSearchQuery.toLowerCase()`) outside the
+    // callback to prevent O(N) string allocations during iteration.
+    // Expected impact: Prevents redundant array traversals and intermediate memory allocations.
+    const isSocialFilter = channelFilter === "social";
+    const q = deferredSearchQuery.trim() ? deferredSearchQuery.toLowerCase() : null;
 
-    // Channel filter
-    if (channelFilter !== "all") {
-      if (channelFilter === "social") {
-        filtered = filtered.filter(
-          (c) => c.channel === "facebook" || c.channel === "instagram"
-        );
-      } else {
-        filtered = filtered.filter((c) => c.channel === channelFilter);
+    const filtered = conversations.filter((c) => {
+      // Channel check
+      if (channelFilter !== "all") {
+        if (isSocialFilter) {
+          if (c.channel !== "facebook" && c.channel !== "instagram") return false;
+        } else {
+          if (c.channel !== channelFilter) return false;
+        }
       }
-    }
 
-    // Search filter
-    if (deferredSearchQuery.trim()) {
-      const q = deferredSearchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (c) =>
-          c.customerName.toLowerCase().includes(q) ||
-          (c.summary && c.summary.toLowerCase().includes(q))
-      );
-    }
+      // Search check
+      if (q) {
+        if (!c.customerName.toLowerCase().includes(q) && !(c.summary && c.summary.toLowerCase().includes(q))) {
+          return false;
+        }
+      }
+
+      return true;
+    });
 
     // Sort by last message time, most recent first
-    return [...filtered].sort(
+    return filtered.sort(
       (a, b) =>
         new Date(b.lastMessageAt).getTime() -
         new Date(a.lastMessageAt).getTime()
