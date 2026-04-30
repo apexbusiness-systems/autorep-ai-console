@@ -22,3 +22,6 @@
 ## 2026-04-10 - Single-Pass Array Filtering Optimization
 **Learning:** Found that `VehiclesPage` was applying multiple filtering criteria to a list using chained `.filter()` calls, leading to redundant O(N) traversals and intermediate memory allocations.
 **Action:** When applying multiple filtering criteria to a list, combine them into a single `.filter()` pass containing all conditional checks instead of chained `.filter()` calls. This prevents redundant O(N) traversals and intermediate memory allocations.
+## 2026-04-30 - Loop-invariant variables in .filter() callbacks
+**Learning:** Found that `ConversationsPage` was performing repeated string manipulation (`.toLowerCase()`) inside an O(N) array `.filter()` loop, causing redundant object allocation and method execution per item.
+**Action:** When applying multiple filtering criteria to a list, extract loop-invariant logic outside the array iteration block to minimize repetitive overhead and intermediate allocations.
