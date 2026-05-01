@@ -746,32 +746,40 @@ const ConversationsPage = () => {
     [conversations, selectedConversationId]
   );
 
+  // ⚡ Bolt Performance Optimization: Single-Pass Array Filtering
+  // Replaced multiple chained `.filter()` calls with a single-pass filter inside useMemo.
+  // Extracted loop-invariant values (like lowercase strings and conditional branches) outside the loop.
+  // Expected impact: Eliminates redundant O(N) traversals and intermediate memory allocations during large list filtering.
   const filteredConversations = useMemo(() => {
-    let filtered = conversations;
+    const q = deferredSearchQuery.trim().toLowerCase();
+    const isSocialFilter = channelFilter === "social";
+    const isAllFilter = channelFilter === "all";
 
-    // Channel filter
-    if (channelFilter !== "all") {
-      if (channelFilter === "social") {
-        filtered = filtered.filter(
-          (c) => c.channel === "facebook" || c.channel === "instagram"
-        );
-      } else {
-        filtered = filtered.filter((c) => c.channel === channelFilter);
+    const filtered = conversations.filter((c) => {
+      // Channel filter
+      if (!isAllFilter) {
+        if (isSocialFilter) {
+          if (c.channel !== "facebook" && c.channel !== "instagram") return false;
+        } else {
+          if (c.channel !== channelFilter) return false;
+        }
       }
-    }
 
-    // Search filter
-    if (deferredSearchQuery.trim()) {
-      const q = deferredSearchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (c) =>
-          c.customerName.toLowerCase().includes(q) ||
-          (c.summary && c.summary.toLowerCase().includes(q))
-      );
-    }
+      // Search filter
+      if (q) {
+        if (
+          !c.customerName.toLowerCase().includes(q) &&
+          !(c.summary && c.summary.toLowerCase().includes(q))
+        ) {
+          return false;
+        }
+      }
+
+      return true;
+    });
 
     // Sort by last message time, most recent first
-    return [...filtered].sort(
+    return filtered.sort(
       (a, b) =>
         new Date(b.lastMessageAt).getTime() -
         new Date(a.lastMessageAt).getTime()
