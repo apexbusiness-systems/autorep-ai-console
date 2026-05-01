@@ -96,8 +96,10 @@ const AppSidebar = ({ onNavigate }: { onNavigate?: () => void }) => {
           <span className="text-xs text-muted-foreground">AI Agent Online</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-gold/50" />
-          <span className="text-[10px] text-muted-foreground">Supabase Connected</span>
+          <span className={`w-2 h-2 rounded-full ${import.meta.env.VITE_SUPABASE_URL && !import.meta.env.VITE_SUPABASE_URL.includes('placeholder') ? 'bg-gold/50' : 'bg-muted-foreground/30'}`} />
+          <span className="text-[10px] text-muted-foreground">
+            {import.meta.env.VITE_SUPABASE_URL && !import.meta.env.VITE_SUPABASE_URL.includes('placeholder') ? 'Supabase Connected' : 'Demo Mode'}
+          </span>
         </div>
         <div className="flex items-center justify-between pt-2 border-t border-sidebar-border">
           <span className="text-xs text-muted-foreground">Night / Day</span>
