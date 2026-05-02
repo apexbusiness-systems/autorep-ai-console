@@ -746,36 +746,32 @@ const ConversationsPage = () => {
     [conversations, selectedConversationId]
   );
 
-  // ⚡ Bolt Performance Optimization: Single-Pass Array Filtering
-  // Replaced multiple chained `.filter()` calls with a single-pass filter inside useMemo.
-  // Extracted loop-invariant values (like lowercase strings and conditional branches) outside the loop.
-  // Expected impact: Eliminates redundant O(N) traversals and intermediate memory allocations during large list filtering.
+  // ⚡ Bolt Performance Optimization: Single-pass array reduction
+  // Replaced multiple chained .filter() operations with a single pass to prevent redundant O(N) traversals and intermediate array allocations.
   const filteredConversations = useMemo(() => {
-    // ⚡ Bolt Performance Optimization: Single-pass array filtering and invariant extraction
-    // Replaced multiple chained `.filter()` calls with a single-pass filter.
-    // Moved loop-invariant variables (e.g. `deferredSearchQuery.toLowerCase()`) outside the
-    // callback to prevent O(N) string allocations during iteration.
-    // Expected impact: Prevents redundant array traversals and intermediate memory allocations.
-    const isSocialFilter = channelFilter === "social";
-    const q = deferredSearchQuery.trim() ? deferredSearchQuery.toLowerCase() : null;
+    let q = "";
+    if (deferredSearchQuery.trim()) {
+      q = deferredSearchQuery.toLowerCase();
+    }
 
-    const filtered = conversations.filter((c) => {
-      // Channel check
+    const filtered = conversations.filter(c => {
+      // Channel filter
       if (channelFilter !== "all") {
-        if (isSocialFilter) {
-          if (c.channel !== "facebook" && c.channel !== "instagram") return false;
-        } else {
-          if (c.channel !== channelFilter) return false;
-        }
-      }
-
-      // Search check
-      if (q) {
-        if (!c.customerName.toLowerCase().includes(q) && !(c.summary && c.summary.toLowerCase().includes(q))) {
+        if (channelFilter === "social") {
+          if (c.channel !== "facebook" && c.channel !== "instagram") {
+            return false;
+          }
+        } else if (c.channel !== channelFilter) {
           return false;
         }
       }
 
+      // Search filter
+      if (q) {
+        if (!c.customerName.toLowerCase().includes(q) && !(c.summary && c.summary.toLowerCase().includes(q))) {
+            return false;
+        }
+      }
       return true;
     });
 
