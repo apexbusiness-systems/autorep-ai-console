@@ -746,6 +746,10 @@ const ConversationsPage = () => {
     [conversations, selectedConversationId]
   );
 
+  // ⚡ Bolt Performance Optimization: Single-Pass Array Filtering
+  // Replaced multiple chained `.filter()` calls with a single-pass filter inside useMemo.
+  // Extracted loop-invariant values (like lowercase strings and conditional branches) outside the loop.
+  // Expected impact: Eliminates redundant O(N) traversals and intermediate memory allocations during large list filtering.
   const filteredConversations = useMemo(() => {
     // ⚡ Bolt Performance Optimization: Single-pass array filtering and invariant extraction
     // Replaced multiple chained `.filter()` calls with a single-pass filter.
