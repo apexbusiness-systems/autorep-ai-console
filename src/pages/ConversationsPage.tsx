@@ -751,13 +751,17 @@ const ConversationsPage = () => {
   // Extracted loop-invariant values (like lowercase strings and conditional branches) outside the loop.
   // Expected impact: Eliminates redundant O(N) traversals and intermediate memory allocations during large list filtering.
   const filteredConversations = useMemo(() => {
-    const q = deferredSearchQuery.trim().toLowerCase();
+    // ⚡ Bolt Performance Optimization: Single-pass array filtering and invariant extraction
+    // Replaced multiple chained `.filter()` calls with a single-pass filter.
+    // Moved loop-invariant variables (e.g. `deferredSearchQuery.toLowerCase()`) outside the
+    // callback to prevent O(N) string allocations during iteration.
+    // Expected impact: Prevents redundant array traversals and intermediate memory allocations.
     const isSocialFilter = channelFilter === "social";
-    const isAllFilter = channelFilter === "all";
+    const q = deferredSearchQuery.trim() ? deferredSearchQuery.toLowerCase() : null;
 
     const filtered = conversations.filter((c) => {
-      // Channel filter
-      if (!isAllFilter) {
+      // Channel check
+      if (channelFilter !== "all") {
         if (isSocialFilter) {
           if (c.channel !== "facebook" && c.channel !== "instagram") return false;
         } else {
@@ -765,12 +769,9 @@ const ConversationsPage = () => {
         }
       }
 
-      // Search filter
+      // Search check
       if (q) {
-        if (
-          !c.customerName.toLowerCase().includes(q) &&
-          !(c.summary && c.summary.toLowerCase().includes(q))
-        ) {
+        if (!c.customerName.toLowerCase().includes(q) && !(c.summary && c.summary.toLowerCase().includes(q))) {
           return false;
         }
       }

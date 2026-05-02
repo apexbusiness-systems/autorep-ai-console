@@ -177,23 +177,24 @@ class MarketCheckService {
       { id: 'mc-demo-6', source: 'marketcheck', vin: '5YJ3E1EA1PF567890', year: 2024, make: 'Chevrolet', model: 'Equinox', trim: 'RS AWD', body: 'SUV', mileage: 3200, price: 36800, condition: 'used', exteriorColor: 'Sterling Grey', fuelType: 'Gasoline', transmission: 'Automatic', drivetrain: 'AWD', dealerName: 'Valley Chevrolet', dealerCity: 'Hamilton', dealerProvince: 'ON', distance: 35, daysOnMarket: 18, features: ['RS Sport Package', 'Bose Audio', 'Panoramic Sunroof'] },
     ];
 
-    // ⚡ Bolt Performance Optimization: Single-Pass Array Filtering
+    // ⚡ Bolt Performance Optimization: Single-pass array filtering and invariant extraction
     // Replaced multiple chained `.filter()` calls with a single-pass filter.
-    // Extracted loop-invariant values (like lowercase strings) outside the loop to minimize allocation overhead.
-    // Expected impact: Eliminates redundant O(N) traversals and intermediate memory allocations during array searches.
-
-    const filterMake = filters.make?.toLowerCase();
-    const filterModel = filters.model?.toLowerCase();
-    const filterBodyType = filters.bodyType?.toLowerCase();
-    const filterCondition = filters.condition !== 'all' ? filters.condition : undefined;
+    // Moved loop-invariant variables (e.g. `filters.make.toLowerCase()`) outside the
+    // callback to prevent O(N) string allocations during iteration.
+    // Expected impact: Prevents redundant array traversals and intermediate memory allocations.
+    const makeQuery = filters.make?.toLowerCase();
+    const modelQuery = filters.model?.toLowerCase();
+    const bodyTypeQuery = filters.bodyType?.toLowerCase();
+    const hasConditionFilter = filters.condition && filters.condition !== 'all';
 
     return listings.filter(l => {
-      if (filterMake && l.make.toLowerCase() !== filterMake) return false;
-      if (filterModel && !l.model.toLowerCase().includes(filterModel)) return false;
-      if (filters.priceMax !== undefined && l.price > filters.priceMax) return false;
-      if (filters.priceMin !== undefined && l.price < filters.priceMin) return false;
-      if (filterBodyType && l.body.toLowerCase() !== filterBodyType) return false;
-      if (filterCondition && l.condition !== filterCondition) return false;
+      if (makeQuery && l.make.toLowerCase() !== makeQuery) return false;
+      if (modelQuery && !l.model.toLowerCase().includes(modelQuery)) return false;
+      if (filters.priceMax && l.price > filters.priceMax) return false;
+      if (filters.priceMin && l.price < filters.priceMin) return false;
+      if (bodyTypeQuery && l.body.toLowerCase() !== bodyTypeQuery) return false;
+      if (hasConditionFilter && l.condition !== filters.condition) return false;
+
       return true;
     });
   }
