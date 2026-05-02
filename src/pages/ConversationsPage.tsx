@@ -776,7 +776,7 @@ const ConversationsPage = () => {
     }
 
     // Sort by last message time, most recent first
-    return [...filtered].sort(
+    return filtered.sort(
       (a, b) =>
         new Date(b.lastMessageAt).getTime() -
         new Date(a.lastMessageAt).getTime()

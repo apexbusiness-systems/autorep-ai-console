@@ -22,3 +22,6 @@
 ## 2026-04-10 - Single-Pass Array Filtering Optimization
 **Learning:** Found that `VehiclesPage` was applying multiple filtering criteria to a list using chained `.filter()` calls, leading to redundant O(N) traversals and intermediate memory allocations.
 **Action:** When applying multiple filtering criteria to a list, combine them into a single `.filter()` pass containing all conditional checks instead of chained `.filter()` calls. This prevents redundant O(N) traversals and intermediate memory allocations.
+## 2026-04-28 - Single-pass array .filter() instead of chained .filter()
+**Learning:** Found that `InventorySearchService` was chaining multiple `.filter()` operations on an array when applying multiple filters sequentially, which resulted in multiple intermediate array allocations and redundant O(N) traversals.
+**Action:** Replaced chained `.filter()` operations with a single-pass filter that contains early returns for all exclusion conditions.
