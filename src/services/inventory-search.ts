@@ -177,24 +177,14 @@ class MarketCheckService {
       { id: 'mc-demo-6', source: 'marketcheck', vin: '5YJ3E1EA1PF567890', year: 2024, make: 'Chevrolet', model: 'Equinox', trim: 'RS AWD', body: 'SUV', mileage: 3200, price: 36800, condition: 'used', exteriorColor: 'Sterling Grey', fuelType: 'Gasoline', transmission: 'Automatic', drivetrain: 'AWD', dealerName: 'Valley Chevrolet', dealerCity: 'Hamilton', dealerProvince: 'ON', distance: 35, daysOnMarket: 18, features: ['RS Sport Package', 'Bose Audio', 'Panoramic Sunroof'] },
     ];
 
-    // ⚡ Bolt Performance Optimization: Single-pass array filtering and invariant extraction
-    // Replaced multiple chained `.filter()` calls with a single-pass filter.
-    // Moved loop-invariant variables (e.g. `filters.make.toLowerCase()`) outside the
-    // callback to prevent O(N) string allocations during iteration.
-    // Expected impact: Prevents redundant array traversals and intermediate memory allocations.
-    const makeQuery = filters.make?.toLowerCase();
-    const modelQuery = filters.model?.toLowerCase();
-    const bodyTypeQuery = filters.bodyType?.toLowerCase();
-    const hasConditionFilter = filters.condition && filters.condition !== 'all';
-
+    // Refactored multiple O(N) array .filter() operations into a single-pass filter
     return listings.filter(l => {
-      if (makeQuery && l.make.toLowerCase() !== makeQuery) return false;
-      if (modelQuery && !l.model.toLowerCase().includes(modelQuery)) return false;
+      if (filters.make && l.make.toLowerCase() !== filters.make.toLowerCase()) return false;
+      if (filters.model && !l.model.toLowerCase().includes(filters.model.toLowerCase())) return false;
       if (filters.priceMax && l.price > filters.priceMax) return false;
       if (filters.priceMin && l.price < filters.priceMin) return false;
-      if (bodyTypeQuery && l.body.toLowerCase() !== bodyTypeQuery) return false;
-      if (hasConditionFilter && l.condition !== filters.condition) return false;
-
+      if (filters.bodyType && l.body.toLowerCase() !== filters.bodyType.toLowerCase()) return false;
+      if (filters.condition && filters.condition !== 'all' && l.condition !== filters.condition) return false;
       return true;
     });
   }
