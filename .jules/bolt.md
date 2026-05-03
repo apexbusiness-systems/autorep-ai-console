@@ -25,3 +25,6 @@
 ## 2026-04-28 - Single-pass array .filter() instead of chained .filter()
 **Learning:** Found that `InventorySearchService` was chaining multiple `.filter()` operations on an array when applying multiple filters sequentially, which resulted in multiple intermediate array allocations and redundant O(N) traversals.
 **Action:** Replaced chained `.filter()` operations with a single-pass filter that contains early returns for all exclusion conditions.
+## 2026-05-15 - Array .filter().length anti-pattern for counts
+**Learning:** Found that `AppSidebar` was using `array.filter(...).length` to compute derived counts (e.g., active conversations, open escalations). This allocates an intermediate array in memory just to count the items, which causes unnecessary garbage collection overhead when the array is large or the counts are re-evaluated often.
+**Action:** Replace `.filter(...).length` with a manual `for` loop to increment a counter without allocating any new arrays.
