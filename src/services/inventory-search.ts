@@ -253,12 +253,60 @@ class CarQueryService {
 
 // ─── NHTSA vPIC API ─────────────────────────────────────────────────────────
 
+const NHTSA_REQUEST_TIMEOUT_MS = 5000;
+
+function normalizeVin(vin: string): string {
+  return vin.trim().toUpperCase();
+}
+
+function isStructurallyValidVin(vin: string): boolean {
+  // VIN standard: exactly 17 chars and excludes I/O/Q due to ambiguity with 1/0
+  return /^[A-HJ-NPR-Z0-9]{17}$/.test(vin);
+}
+
+function createTimeoutSignal(timeoutMs: number): { signal: AbortSignal; cleanup: () => void } {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  return {
+    signal: controller.signal,
+    cleanup: () => clearTimeout(timer),
+  };
+}
+
 class NHTSAService {
   private baseUrl = 'https://vpic.nhtsa.dot.gov/api/vehicles';
 
-  async decodeVIN(vin: string): Promise<VINDecodeResult> {
+  async decodeVIN(rawVin: string): Promise<VINDecodeResult> {
+    const vin = normalizeVin(rawVin);
+
+    if (!vin) {
+      return {
+        vin,
+        year: 0,
+        make: '',
+        model: '',
+        valid: false,
+        errorCode: 'INVALID_INPUT',
+        errorText: 'VIN is required',
+      };
+    }
+
+    if (!isStructurallyValidVin(vin)) {
+      return {
+        vin,
+        year: 0,
+        make: '',
+        model: '',
+        valid: false,
+        errorCode: 'INVALID_FORMAT',
+        errorText: 'VIN must be 17 characters and exclude I, O, Q',
+      };
+    }
+
+    const { signal, cleanup } = createTimeoutSignal(NHTSA_REQUEST_TIMEOUT_MS);
+
     try {
-      const response = await fetch(`${this.baseUrl}/DecodeVin/${vin}?format=json`);
+      const response = await fetch(`${this.baseUrl}/DecodeVin/${vin}?format=json`, { signal });
       if (!response.ok) throw new Error(`NHTSA API error: ${response.status}`);
       const data = await response.json();
       const results = data.Results || [];
@@ -298,6 +346,8 @@ class NHTSAService {
         errorCode: 'NETWORK_ERROR',
         errorText: 'Failed to connect to NHTSA API',
       };
+    } finally {
+      cleanup();
     }
   }
 
