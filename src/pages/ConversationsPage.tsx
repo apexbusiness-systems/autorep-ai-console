@@ -746,6 +746,25 @@ const ConversationsPage = () => {
     [conversations, selectedConversationId]
   );
 
+<<<<<<< Updated upstream
+  // ⚡ Bolt Performance Optimization: Single-Pass Array Filtering
+  // Replaced multiple chained `.filter()` calls with a single-pass filter inside useMemo.
+  // Extracted loop-invariant values (like lowercase strings and conditional branches) outside the loop.
+  // Expected impact: Eliminates redundant O(N) traversals and intermediate memory allocations during large list filtering.
+  const filteredConversations = useMemo(() => {
+    // ⚡ Bolt Performance Optimization: Single-pass array filtering and invariant extraction
+    // Replaced multiple chained `.filter()` calls with a single-pass filter.
+    // Moved loop-invariant variables (e.g. `deferredSearchQuery.toLowerCase()`) outside the
+    // callback to prevent O(N) string allocations during iteration.
+    // Expected impact: Prevents redundant array traversals and intermediate memory allocations.
+    const isSocialFilter = channelFilter === "social";
+    const q = deferredSearchQuery.trim() ? deferredSearchQuery.toLowerCase() : null;
+
+    const filtered = conversations.filter((c) => {
+      // Channel check
+      if (channelFilter !== "all") {
+        if (isSocialFilter) {
+=======
   // ⚡ Bolt Performance Optimization: Single-Pass Filtering
   // Consolidates multiple chained `.filter()` calls into a single O(N) array traversal.
   // Extracted the lowercase transformation of the search query out of the loop callback
@@ -760,18 +779,25 @@ const ConversationsPage = () => {
       // 1. Channel filter
       if (channelFilter !== "all") {
         if (channelFilter === "social") {
+>>>>>>> Stashed changes
           if (c.channel !== "facebook" && c.channel !== "instagram") return false;
         } else {
           if (c.channel !== channelFilter) return false;
         }
       }
 
+<<<<<<< Updated upstream
+      // Search check
+      if (q) {
+        if (!c.customerName.toLowerCase().includes(q) && !(c.summary && c.summary.toLowerCase().includes(q))) {
+=======
       // 2. Search filter
       if (q) {
         if (
           !c.customerName.toLowerCase().includes(q) &&
           !(c.summary && c.summary.toLowerCase().includes(q))
         ) {
+>>>>>>> Stashed changes
           return false;
         }
       }

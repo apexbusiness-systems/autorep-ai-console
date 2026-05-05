@@ -100,6 +100,13 @@ const LiveAgentConsole = () => {
     setMobilePane(activeConvId ? 'chat' : 'queue');
   }, [activeConvId, isCompactLayout]);
 
+  useEffect(() => {
+    if (autoReplyTimeout.current) {
+      window.clearTimeout(autoReplyTimeout.current);
+      autoReplyTimeout.current = null;
+    }
+  }, [activeConvId]);
+
   useEffect(() => () => {
     if (autoReplyTimeout.current) {
       window.clearTimeout(autoReplyTimeout.current);

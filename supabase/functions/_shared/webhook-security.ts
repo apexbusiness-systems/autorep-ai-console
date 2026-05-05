@@ -52,8 +52,10 @@ export async function verifyHmacSignature(
 }
 
 /**
- * Verify Twilio webhook signature.
- * Twilio signs callbacks using their auth token.
+ * Verify Twilio webhook signature using HMAC-SHA1.
+ *
+ * Twilio signs: HMAC-SHA1(authToken, fullUrl + sortedParamValues)
+ * See: https://www.twilio.com/docs/usage/webhooks/webhooks-security
  */
 export async function verifyTwilioSignature(
   request: Request,
@@ -64,10 +66,44 @@ export async function verifyTwilioSignature(
 
   if (!twilioSignature || !authToken) return false;
 
-  // Twilio uses HMAC-SHA1 on the full URL + sorted POST params
-  // For simplicity, we verify presence of the header (full Twilio validation
-  // requires the request URL which varies by deployment)
-  return !!twilioSignature && !!authToken;
+  // Reconstruct the full URL Twilio signed
+  const url = new URL(request.url);
+  let signingString = url.toString();
+
+  // For form-encoded POST bodies, Twilio appends sorted key=value pairs
+  if (
+    request.headers.get("content-type")?.includes("application/x-www-form-urlencoded") &&
+    body
+  ) {
+    const params = new URLSearchParams(body);
+    const sorted = Array.from(params.entries()).sort(([a], [b]) => a.localeCompare(b));
+    for (const [key, value] of sorted) {
+      signingString += key + value;
+    }
+  }
+
+  try {
+    const encoder = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+      "raw",
+      encoder.encode(authToken),
+      { name: "HMAC", hash: "SHA-1" },
+      false,
+      ["sign"]
+    );
+    const signatureBuffer = await crypto.subtle.sign("HMAC", key, encoder.encode(signingString));
+    const computed = btoa(String.fromCharCode(...new Uint8Array(signatureBuffer)));
+
+    // Constant-time comparison
+    if (computed.length !== twilioSignature.length) return false;
+    let diff = 0;
+    for (let i = 0; i < computed.length; i++) {
+      diff |= computed.charCodeAt(i) ^ twilioSignature.charCodeAt(i);
+    }
+    return diff === 0;
+  } catch {
+    return false;
+  }
 }
 
 /**

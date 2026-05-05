@@ -177,14 +177,16 @@ class MarketCheckService {
       { id: 'mc-demo-6', source: 'marketcheck', vin: '5YJ3E1EA1PF567890', year: 2024, make: 'Chevrolet', model: 'Equinox', trim: 'RS AWD', body: 'SUV', mileage: 3200, price: 36800, condition: 'used', exteriorColor: 'Sterling Grey', fuelType: 'Gasoline', transmission: 'Automatic', drivetrain: 'AWD', dealerName: 'Valley Chevrolet', dealerCity: 'Hamilton', dealerProvince: 'ON', distance: 35, daysOnMarket: 18, features: ['RS Sport Package', 'Bose Audio', 'Panoramic Sunroof'] },
     ];
 
-    let result = listings;
-    if (filters.make) result = result.filter(l => l.make.toLowerCase() === filters.make!.toLowerCase());
-    if (filters.model) result = result.filter(l => l.model.toLowerCase().includes(filters.model!.toLowerCase()));
-    if (filters.priceMax) result = result.filter(l => l.price <= filters.priceMax!);
-    if (filters.priceMin) result = result.filter(l => l.price >= filters.priceMin!);
-    if (filters.bodyType) result = result.filter(l => l.body.toLowerCase() === filters.bodyType!.toLowerCase());
-    if (filters.condition && filters.condition !== 'all') result = result.filter(l => l.condition === filters.condition);
-    return result;
+    // Refactored multiple O(N) array .filter() operations into a single-pass filter
+    return listings.filter(l => {
+      if (filters.make && l.make.toLowerCase() !== filters.make.toLowerCase()) return false;
+      if (filters.model && !l.model.toLowerCase().includes(filters.model.toLowerCase())) return false;
+      if (filters.priceMax && l.price > filters.priceMax) return false;
+      if (filters.priceMin && l.price < filters.priceMin) return false;
+      if (filters.bodyType && l.body.toLowerCase() !== filters.bodyType.toLowerCase()) return false;
+      if (filters.condition && filters.condition !== 'all' && l.condition !== filters.condition) return false;
+      return true;
+    });
   }
 }
 
@@ -251,12 +253,60 @@ class CarQueryService {
 
 // ─── NHTSA vPIC API ─────────────────────────────────────────────────────────
 
+const NHTSA_REQUEST_TIMEOUT_MS = 5000;
+
+function normalizeVin(vin: string): string {
+  return vin.trim().toUpperCase();
+}
+
+function isStructurallyValidVin(vin: string): boolean {
+  // VIN standard: exactly 17 chars and excludes I/O/Q due to ambiguity with 1/0
+  return /^[A-HJ-NPR-Z0-9]{17}$/.test(vin);
+}
+
+function createTimeoutSignal(timeoutMs: number): { signal: AbortSignal; cleanup: () => void } {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  return {
+    signal: controller.signal,
+    cleanup: () => clearTimeout(timer),
+  };
+}
+
 class NHTSAService {
   private baseUrl = 'https://vpic.nhtsa.dot.gov/api/vehicles';
 
-  async decodeVIN(vin: string): Promise<VINDecodeResult> {
+  async decodeVIN(rawVin: string): Promise<VINDecodeResult> {
+    const vin = normalizeVin(rawVin);
+
+    if (!vin) {
+      return {
+        vin,
+        year: 0,
+        make: '',
+        model: '',
+        valid: false,
+        errorCode: 'INVALID_INPUT',
+        errorText: 'VIN is required',
+      };
+    }
+
+    if (!isStructurallyValidVin(vin)) {
+      return {
+        vin,
+        year: 0,
+        make: '',
+        model: '',
+        valid: false,
+        errorCode: 'INVALID_FORMAT',
+        errorText: 'VIN must be 17 characters and exclude I, O, Q',
+      };
+    }
+
+    const { signal, cleanup } = createTimeoutSignal(NHTSA_REQUEST_TIMEOUT_MS);
+
     try {
-      const response = await fetch(`${this.baseUrl}/DecodeVin/${vin}?format=json`);
+      const response = await fetch(`${this.baseUrl}/DecodeVin/${vin}?format=json`, { signal });
       if (!response.ok) throw new Error(`NHTSA API error: ${response.status}`);
       const data = await response.json();
       const results = data.Results || [];
@@ -296,6 +346,8 @@ class NHTSAService {
         errorCode: 'NETWORK_ERROR',
         errorText: 'Failed to connect to NHTSA API',
       };
+    } finally {
+      cleanup();
     }
   }
 
