@@ -28,3 +28,6 @@
 ## 2026-05-15 - Array .filter().length anti-pattern for counts
 **Learning:** Found that `AppSidebar` was using `array.filter(...).length` to compute derived counts (e.g., active conversations, open escalations). This allocates an intermediate array in memory just to count the items, which causes unnecessary garbage collection overhead when the array is large or the counts are re-evaluated often.
 **Action:** Replace `.filter(...).length` with a manual `for` loop to increment a counter without allocating any new arrays.
+## 2026-05-16 - Array .filter().slice() anti-pattern for top-k selection
+**Learning:** Found that `LiveAgentConsole` was using `vehicles.filter(v => v.status === 'available').slice(0, 3)` which iterates over the entire `vehicles` array and creates an intermediate array before slicing the first 3 items. This results in O(N) full traversal + array allocation overhead instead of O(K) early-exit.
+**Action:** Replace `.filter(...).slice(0, K)` with a manual `for` loop that pushes matching elements into an array and `break`s when the length reaches `K`. This prevents full array traversal and intermediate array allocation.
