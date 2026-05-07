@@ -250,7 +250,7 @@ class IntegrationManager {
   async loadConfigs(): Promise<IntegrationConfig[]> {
     try {
       const { data, error } = await supabase
-        .from('integration_configs_public')
+        .from('integration_configs')
         .select('*');
 
       if (error) {

@@ -1,7 +1,6 @@
 import { Component, type ReactNode } from "react";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { reportError } from "@/lib/error-reporter";
 
 interface Props {
   children: ReactNode;
@@ -24,7 +23,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    reportError(error, { componentStack: info.componentStack ?? undefined });
+    console.error("[ErrorBoundary]", error, info.componentStack);
   }
 
   handleReset = () => {

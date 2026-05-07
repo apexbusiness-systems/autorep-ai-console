@@ -35,7 +35,7 @@ const VehiclesPage = () => {
   const [term, setTerm] = useState(72);
   const [rate, setRate] = useState(5.99);
 
-  // ⚡ Bolt Performance Optimization: Single-Pass Filtering
+  // ⚡ Bolt Performance Optimization: Deferred Search Queries
   // Defers expensive list filtering from blocking the main thread during rapid typing
   // Expected impact: Eliminates O(N) recalculations on unrelated state changes and keeps search responsive (60fps)
 
