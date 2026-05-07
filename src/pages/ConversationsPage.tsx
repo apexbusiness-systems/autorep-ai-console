@@ -764,7 +764,6 @@ const ConversationsPage = () => {
         } else if (c.channel !== channelFilter) {
           return false;
         }
-      }
 
       // Search filter
       if (q) {
