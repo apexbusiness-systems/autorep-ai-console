@@ -19,15 +19,4 @@
 ## 2025-04-18 - Single-pass array reduction instead of multiple .filter() calls
 **Learning:** Found that pages like `ManagerPage`, `LeadsPage`, and `FinancePage` were chaining multiple `.filter().length` or similar operations on the same large array (e.g., `conversations`, `followUpTasks`, `packets`) sequentially inside `useMemo` hooks. This caused multiple O(N) traversals and redundant array allocations.
 **Action:** When deriving multiple subsets or counts from the same list, replace multiple `.filter()` calls with a single-pass `for` loop to categorize or count items simultaneously. This prevents redundant O(N) array traversals and reduces intermediate memory allocations.
-## 2026-04-10 - Single-Pass Array Filtering Optimization
-**Learning:** Found that `VehiclesPage` was applying multiple filtering criteria to a list using chained `.filter()` calls, leading to redundant O(N) traversals and intermediate memory allocations.
-**Action:** When applying multiple filtering criteria to a list, combine them into a single `.filter()` pass containing all conditional checks instead of chained `.filter()` calls. This prevents redundant O(N) traversals and intermediate memory allocations.
-## 2026-04-28 - Single-pass array .filter() instead of chained .filter()
-**Learning:** Found that `InventorySearchService` was chaining multiple `.filter()` operations on an array when applying multiple filters sequentially, which resulted in multiple intermediate array allocations and redundant O(N) traversals.
-**Action:** Replaced chained `.filter()` operations with a single-pass filter that contains early returns for all exclusion conditions.
-## 2026-05-15 - Array .filter().length anti-pattern for counts
-**Learning:** Found that `AppSidebar` was using `array.filter(...).length` to compute derived counts (e.g., active conversations, open escalations). This allocates an intermediate array in memory just to count the items, which causes unnecessary garbage collection overhead when the array is large or the counts are re-evaluated often.
-**Action:** Replace `.filter(...).length` with a manual `for` loop to increment a counter without allocating any new arrays.
-## 2026-05-16 - Array .filter().slice() anti-pattern for top-k selection
-**Learning:** Found that `LiveAgentConsole` was using `vehicles.filter(v => v.status === 'available').slice(0, 3)` which iterates over the entire `vehicles` array and creates an intermediate array before slicing the first 3 items. This results in O(N) full traversal + array allocation overhead instead of O(K) early-exit.
-**Action:** Replace `.filter(...).slice(0, K)` with a manual `for` loop that pushes matching elements into an array and `break`s when the length reaches `K`. This prevents full array traversal and intermediate array allocation.
+## 2024-05-18 - Single-Pass Array Reduction\n**Learning:** Found multiple chained `.filter()` calls on large lists in `VehiclesPage.tsx` and `ConversationsPage.tsx`, which causes multiple O(N) traversals and redundant array allocations.\n**Action:** Replaced chained `.filter()` operations with a single pass that combines all condition checks. Also realized that the return of `.filter()` is a new array, which means it can be safely sorted directly (e.g., `filtered.sort(...)`) instead of spreading into a new array (`[...filtered].sort(...)`).

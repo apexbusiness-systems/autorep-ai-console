@@ -76,19 +76,9 @@ const LiveAgentConsole = () => {
     return conversations.filter(c => c.channel === channelFilter);
   }, [conversations, channelFilter]);
 
-  // ⚡ Bolt Performance Optimization: Single-pass early-exit filtering
-  // Replaced .filter().slice() with a manual loop that exits early.
-  // Expected impact: Prevents full array traversal and intermediate array allocation.
-  const matchedVehicles = useMemo(() => {
-    const matched = [];
-    for (let i = 0; i < vehicles.length; i++) {
-      if (vehicles[i].status === 'available') {
-        matched.push(vehicles[i]);
-        if (matched.length === 3) break;
-      }
-    }
-    return matched;
-  }, [vehicles]);
+  const matchedVehicles = useMemo(() =>
+    vehicles.filter(v => v.status === 'available').slice(0, 3),
+  [vehicles]);
 
   // ⚡ Bolt Performance Optimization: Memoized display messages
   // Filtering out 'system' messages on every render caused O(N) operations
@@ -109,13 +99,6 @@ const LiveAgentConsole = () => {
     if (!isCompactLayout) return;
     setMobilePane(activeConvId ? 'chat' : 'queue');
   }, [activeConvId, isCompactLayout]);
-
-  useEffect(() => {
-    if (autoReplyTimeout.current) {
-      window.clearTimeout(autoReplyTimeout.current);
-      autoReplyTimeout.current = null;
-    }
-  }, [activeConvId]);
 
   useEffect(() => () => {
     if (autoReplyTimeout.current) {

@@ -746,34 +746,34 @@ const ConversationsPage = () => {
     [conversations, selectedConversationId]
   );
 
-  // ⚡ Bolt Performance Optimization: Single-pass array filtering
-  // Replaced multiple chained `.filter()` calls with a single-pass filter
-  // Expected impact: Reduces CPU cycles and memory allocations when filtering a large list of conversations
+  // ⚡ Bolt Performance Optimization: Single-pass array reduction
+  // Replaced multiple chained .filter() operations with a single pass to prevent redundant O(N) traversals and intermediate array allocations.
   const filteredConversations = useMemo(() => {
-    let filtered = conversations;
-    const q = deferredSearchQuery.trim().toLowerCase();
-
-    if (channelFilter !== "all" || q) {
-      filtered = conversations.filter((c) => {
-        if (channelFilter !== "all") {
-          if (channelFilter === "social" && !(c.channel === "facebook" || c.channel === "instagram")) {
-            return false;
-          } else if (channelFilter !== "social" && c.channel !== channelFilter) {
-            return false;
-          }
-        }
-
-        if (q) {
-          const matchesName = c.customerName.toLowerCase().includes(q);
-          const matchesSummary = c.summary && c.summary.toLowerCase().includes(q);
-          if (!matchesName && !matchesSummary) {
-            return false;
-          }
-        }
-
-        return true;
-      });
+    let q = "";
+    if (deferredSearchQuery.trim()) {
+      q = deferredSearchQuery.toLowerCase();
     }
+
+    const filtered = conversations.filter(c => {
+      // Channel filter
+      if (channelFilter !== "all") {
+        if (channelFilter === "social") {
+          if (c.channel !== "facebook" && c.channel !== "instagram") {
+            return false;
+          }
+        } else if (c.channel !== channelFilter) {
+          return false;
+        }
+      }
+
+      // Search filter
+      if (q) {
+        if (!c.customerName.toLowerCase().includes(q) && !(c.summary && c.summary.toLowerCase().includes(q))) {
+            return false;
+        }
+      }
+      return true;
+    });
 
     // Sort by last message time, most recent first
     return filtered.sort(
