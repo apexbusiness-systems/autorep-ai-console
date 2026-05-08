@@ -76,9 +76,19 @@ const LiveAgentConsole = () => {
     return conversations.filter(c => c.channel === channelFilter);
   }, [conversations, channelFilter]);
 
-  const matchedVehicles = useMemo(() =>
-    vehicles.filter(v => v.status === 'available').slice(0, 3),
-  [vehicles]);
+  // ⚡ Bolt Performance Optimization: Single-pass early-exit for top-k elements
+  // Replaced `vehicles.filter(...).slice(0, 3)` with a single-pass loop.
+  // This avoids traversing the entire array and creating intermediate allocations.
+  const matchedVehicles = useMemo(() => {
+    const result = [];
+    for (const v of vehicles) {
+      if (v.status === 'available') {
+        result.push(v);
+        if (result.length === 3) break;
+      }
+    }
+    return result;
+  }, [vehicles]);
 
   // ⚡ Bolt Performance Optimization: Memoized display messages
   // Filtering out 'system' messages on every render caused O(N) operations
