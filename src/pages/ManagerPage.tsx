@@ -8,7 +8,7 @@ import {
   Shield, Eye, HandMetal, MessageSquare, AlertTriangle,
   BarChart3, Users, Clock, Bot, PhoneOff, CheckCircle2,
   XCircle, Edit3, ShieldCheck, FileWarning, ArrowRightLeft,
-  Activity, Phone, Globe, Instagram, Facebook, Mail,
+  Activity, Phone, Globe, Instagram, Facebook, Mail, Car,
   ChevronRight, Gauge, UserCheck, Ban, Timer, Flag,
   TrendingUp, DollarSign, Zap, Target,
 } from "lucide-react";
@@ -23,9 +23,12 @@ import {
   useMessages,
   useLeads,
   useQuotes,
+  useVehicles,
   initiateHandoff,
 } from "@/hooks/use-store";
 import type { Conversation, Escalation, Message, Channel } from "@/types/domain";
+import { forecastDemand, suggestDynamicPrice } from "@/services/pricingService";
+import { getMaintenanceReminders } from "@/services/maintenanceService";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -922,6 +925,7 @@ function DashboardCharts() {
   const leads = useLeads();
   const conversations = useConversations();
   const quotes = useQuotes();
+  const vehicles = useVehicles();
 
   // Lead Stage Funnel Data
   const funnelData = useMemo(() => {
@@ -997,6 +1001,26 @@ function DashboardCharts() {
     { time: 'Now', ai: aiHandledCount + 18, human: humanHandledCount + 3, leads: leads.length + 5 },
   ], [aiHandledCount, humanHandledCount, leads.length]);
 
+  const demandForecast = useMemo(() => forecastDemand({ vehicles, leads, conversations, quotes }), [vehicles, leads, conversations, quotes]);
+  const maintenanceReminders = useMemo(() => getMaintenanceReminders(vehicles), [vehicles]);
+  const inventoryInsights = useMemo(() => {
+    const available = vehicles.filter(vehicle => vehicle.status === 'available');
+    const aging = vehicles.filter(vehicle => (vehicle.daysOnLot ?? 0) > 30);
+    const averagePrice = available.length ? Math.round(available.reduce((sum, vehicle) => sum + vehicle.price, 0) / available.length) : 0;
+    const topSuggestion = available[0] ? suggestDynamicPrice({ vehicle: available[0], vehicles, leads, conversations, quotes, basePrice: available[0].price }) : null;
+    return { available: available.length, aging: aging.length, averagePrice, topSuggestion };
+  }, [vehicles, leads, conversations, quotes]);
+
+  const conversionTrendData = useMemo(() => [
+    { label: 'New', value: leads.filter(lead => lead.stage === 'new').length },
+    { label: 'Interest', value: leads.filter(lead => lead.stage === 'vehicle_interest').length },
+    { label: 'Quoted', value: leads.filter(lead => lead.stage === 'quote_sent').length },
+    { label: 'Won', value: leads.filter(lead => lead.stage === 'closed_won').length },
+  ], [leads]);
+
+  const topLeadInsights = useMemo(() => [...leads].sort((a, b) => (b.leadScore ?? 0) - (a.leadScore ?? 0)).slice(0, 4), [leads]);
+  const conversationSummaries = useMemo(() => conversations.slice(0, 4), [conversations]);
+
   return (
     <div className="space-y-6 animate-fade-in-up">
       {/* Top KPI Row */}
@@ -1040,6 +1064,59 @@ function DashboardCharts() {
           <p className="text-[10px] text-green-400 mt-1 flex items-center gap-1">
             <TrendingUp className="w-3 h-3" /> 98% faster than human avg
           </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="rounded-lg border border-border bg-card p-5">
+          <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2"><Car className="w-4 h-4 text-gold" /> Inventory Insights</h3>
+          <div className="grid grid-cols-3 gap-3">
+            <SummaryCard icon={Car} label="Available" value={inventoryInsights.available} />
+            <SummaryCard icon={Timer} label="Aging 30d+" value={inventoryInsights.aging} />
+            <SummaryCard icon={DollarSign} label="Avg Price" value={`$${(inventoryInsights.averagePrice / 1000).toFixed(0)}K`} accent />
+          </div>
+          <p className="mt-3 text-xs text-muted-foreground">{inventoryInsights.topSuggestion?.rationale || 'No available inventory for pricing suggestion.'}</p>
+        </div>
+
+        <div className="rounded-lg border border-border bg-card p-5">
+          <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2"><TrendingUp className="w-4 h-4 text-gold" /> Demand Forecast</h3>
+          <ResponsiveContainer width="100%" height={160}>
+            <AreaChart data={demandForecast.trend}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 12%, 18%)" />
+              <XAxis dataKey="label" tick={{ fill: 'hsl(220, 10%, 50%)', fontSize: 11 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: 'hsl(220, 10%, 50%)', fontSize: 11 }} axisLine={false} tickLine={false} />
+              <Tooltip {...chartTooltipStyle} />
+              <Area type="monotone" dataKey="demand" stroke={CHART_GOLD} fill={CHART_GOLD} fillOpacity={0.25} name="Demand" />
+            </AreaChart>
+          </ResponsiveContainer>
+          <p className="text-xs text-muted-foreground">{demandForecast.band.toUpperCase()} demand · {demandForecast.forecastUnits30d} forecast units · {demandForecast.confidence}% confidence</p>
+        </div>
+
+        <div className="rounded-lg border border-border bg-card p-5">
+          <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2"><Target className="w-4 h-4 text-gold" /> Conversion Trend</h3>
+          <ResponsiveContainer width="100%" height={160}>
+            <BarChart data={conversionTrendData} barSize={24}>
+              <XAxis dataKey="label" tick={{ fill: 'hsl(220, 10%, 50%)', fontSize: 11 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: 'hsl(220, 10%, 50%)', fontSize: 11 }} axisLine={false} tickLine={false} />
+              <Tooltip {...chartTooltipStyle} />
+              <Bar dataKey="value" fill={CHART_GREEN} radius={[4, 4, 0, 0]} name="Leads" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="rounded-lg border border-border bg-card p-5">
+          <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2"><UserCheck className="w-4 h-4 text-gold" /> Lead Scores</h3>
+          <div className="space-y-2">{topLeadInsights.map(lead => <div key={lead.id} className="flex items-center justify-between rounded-md bg-secondary/30 px-3 py-2"><div><p className="text-xs font-medium text-foreground">{lead.name}</p><p className="text-[10px] text-muted-foreground">{lead.scoreRationale?.slice(0, 2).join(', ') || 'limited data'}</p></div><span className="text-sm font-bold text-gold">{lead.leadScore ?? 0}</span></div>)}</div>
+        </div>
+        <div className="rounded-lg border border-border bg-card p-5">
+          <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2"><MessageSquare className="w-4 h-4 text-gold" /> Conversation Summaries</h3>
+          <div className="space-y-2">{conversationSummaries.map(conversation => <div key={conversation.id} className="rounded-md bg-secondary/30 px-3 py-2"><p className="text-xs font-medium text-foreground">{conversation.customerName}{conversation.restricted && <span className="ml-2 text-[10px] text-red-400">Restricted</span>}</p><p className="line-clamp-2 text-[10px] text-muted-foreground">{conversation.summary}</p></div>)}</div>
+        </div>
+        <div className="rounded-lg border border-border bg-card p-5">
+          <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2"><FileWarning className="w-4 h-4 text-gold" /> Maintenance Reminders</h3>
+          <div className="space-y-2">{maintenanceReminders.length === 0 ? <p className="text-xs text-muted-foreground">No due maintenance reminders.</p> : maintenanceReminders.slice(0, 4).map(reminder => <div key={reminder.vehicleId} className="rounded-md bg-secondary/30 px-3 py-2"><p className="text-xs font-medium text-foreground">{reminder.label} · {reminder.stock}</p><p className="text-[10px] text-muted-foreground">{reminder.status.replace('_', ' ')} — {reminder.reasons.join(', ')}</p></div>)}</div>
         </div>
       </div>
 

@@ -1,5 +1,6 @@
 import { useState, useMemo, useDeferredValue } from "react";
 import { getVehicleImage } from "@/data/vehicle-images";
+import Vehicle360Viewer from "@/components/vehicles/Vehicle360Viewer";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
 import StatusBadge from "@/components/StatusBadge";
@@ -11,12 +12,13 @@ import {
   CheckCircle, X, FileText,
 } from "lucide-react";
 import { useVehicles, useQuotes, useLeads } from "@/hooks/use-store";
+import { calculateQuoteTotals, type QuotePackageAddon } from "@/services/pricingService";
 
-const calculatePayment = (principal: number, rate: number, months: number) => {
-  if (rate === 0) return principal / months;
-  const r = rate / 100 / 12;
-  return (principal * r) / (1 - Math.pow(1 + r, -months));
-};
+const PACKAGE_OPTIONS: QuotePackageAddon[] = [
+  { id: 'appearance', label: 'Appearance Protection', price: 799, taxable: true },
+  { id: 'winter', label: 'Winter Tire Package', price: 1299, taxable: true },
+  { id: 'service', label: 'Prepaid Maintenance', price: 999, taxable: false },
+];
 
 const VehiclesPage = () => {
   const vehicles = useVehicles();
@@ -34,6 +36,8 @@ const VehiclesPage = () => {
   const [tradeIn, setTradeIn] = useState(0);
   const [term, setTerm] = useState(72);
   const [rate, setRate] = useState(5.99);
+  const [taxRate, setTaxRate] = useState(0.13);
+  const [selectedPackages, setSelectedPackages] = useState<string[]>([]);
 
   // ⚡ Bolt Performance Optimization: Deferred Search Queries
   // Defers expensive list filtering from blocking the main thread during rapid typing
@@ -76,12 +80,19 @@ const VehiclesPage = () => {
   }, [vehicles, deferredSearchQuery, bodyFilter, budgetFilter, statusFilter]);
 
   const builderVehicle = builderVehicleId ? vehicles.find(v => v.id === builderVehicleId) : null;
-  const builderPrincipal = builderVehicle ? builderVehicle.price - downPayment - tradeIn : 0;
-  const builderTaxes = builderPrincipal > 0 ? builderPrincipal * 0.13 : 0;
-  const builderFees = 499;
-  const builderTotal = builderPrincipal + builderTaxes + builderFees;
-  const builderMonthly = builderTotal > 0 ? calculatePayment(builderTotal, rate, term) : 0;
-  const builderBiweekly = builderMonthly / 2.17;
+  const builderPackages = useMemo(() => PACKAGE_OPTIONS.filter(pkg => selectedPackages.includes(pkg.id)), [selectedPackages]);
+  const builderTotals = useMemo(() => calculateQuoteTotals({
+    sellingPrice: builderVehicle?.price ?? 0,
+    downPayment,
+    tradeInValue: tradeIn,
+    termMonths: term,
+    interestRate: rate,
+    taxRate,
+    taxSource: 'Manager quote builder',
+    fees: 499,
+    packages: builderPackages,
+  }), [builderVehicle?.price, downPayment, tradeIn, term, rate, taxRate, builderPackages]);
+  const togglePackage = (id: string) => setSelectedPackages(prev => prev.includes(id) ? prev.filter(pkg => pkg !== id) : [...prev, id]);
 
   // ⚡ Bolt Performance Optimization: Memoized array filter operation
   // Prevents O(N) recalculation on every render (e.g. fast-typing in search input)
@@ -182,10 +193,25 @@ const VehiclesPage = () => {
                 </div>
                 <label className="text-[11px] font-medium text-muted-foreground">Interest Rate (%)</label>
                 <input type="number" step="0.1" className="w-full bg-secondary rounded-md px-3 py-2 text-sm text-foreground border border-border outline-none focus:border-gold/40" value={rate} onChange={e => setRate(Number(e.target.value))} />
+                <label className="text-[11px] font-medium text-muted-foreground">Tax Rate</label>
+                <select className="w-full bg-secondary rounded-md px-3 py-2 text-sm text-foreground border border-border outline-none focus:border-gold/40" value={taxRate} onChange={e => setTaxRate(Number(e.target.value))}>
+                  <option value={0.13}>Ontario HST 13%</option>
+                  <option value={0.05}>GST 5%</option>
+                  <option value={0}>Tax exempt</option>
+                </select>
+                <div className="grid gap-2">
+                  {PACKAGE_OPTIONS.map(pkg => (
+                    <button key={pkg.id} type="button" onClick={() => togglePackage(pkg.id)} className={`rounded-md border px-3 py-2 text-left text-xs transition-colors ${selectedPackages.includes(pkg.id) ? 'border-gold/50 bg-gold/10 text-foreground' : 'border-border bg-secondary/30 text-muted-foreground'}`}>
+                      <span className="block font-medium">{pkg.label}</span>
+                      <span>${pkg.price.toLocaleString()} {pkg.taxable === false ? 'non-taxable' : 'taxable'}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {builderVehicle && (
                 <div className="space-y-3">
+                  <Vehicle360Viewer vehicle={builderVehicle} />
                   <div className="p-4 rounded-lg bg-secondary/50 border border-border space-y-3">
                     <p className="text-sm font-semibold text-foreground">{builderVehicle.year} {builderVehicle.make} {builderVehicle.model} {builderVehicle.trim}</p>
                     <div className="space-y-1.5">
@@ -193,32 +219,33 @@ const VehiclesPage = () => {
                       <QuoteRow label="Down Payment" value={`-$${downPayment.toLocaleString()}`} />
                       <QuoteRow label="Trade-In" value={`-$${tradeIn.toLocaleString()}`} />
                       <div className="border-t border-border pt-1.5">
-                        <QuoteRow label="Principal" value={`$${Math.max(0, builderPrincipal).toLocaleString()}`} />
+                        <QuoteRow label="Principal" value={`$${builderTotals.principal.toLocaleString()}`} />
                       </div>
-                      <QuoteRow label="Taxes (13% HST)" value={`$${Math.round(builderTaxes).toLocaleString()}`} />
-                      <QuoteRow label="Dealer Fees" value={`$${builderFees}`} />
+                      <QuoteRow label={`Taxes (${Math.round(builderTotals.taxRate * 10000) / 100}% HST)`} value={`$${Math.round(builderTotals.taxes).toLocaleString()}`} />
+                      <QuoteRow label="Packages" value={`$${Math.round(builderTotals.packageTotal).toLocaleString()}`} />
+                      <QuoteRow label="Dealer Fees" value={`$${builderTotals.fees}`} />
                       <div className="border-t border-border pt-1.5">
-                        <QuoteRow label="Total Financed" value={`$${Math.round(builderTotal).toLocaleString()}`} bold />
+                        <QuoteRow label="Total Financed" value={`$${Math.round(builderTotals.totalCost).toLocaleString()}`} bold />
                       </div>
                     </div>
                   </div>
                   <div className="p-4 rounded-lg bg-gold/5 border border-gold/15 space-y-2">
                     <div className="flex justify-between">
                       <span className="text-sm font-semibold text-foreground">Monthly Payment</span>
-                      <span className="text-lg font-bold text-gold">${Math.round(builderMonthly).toLocaleString()}/mo</span>
+                      <span className="text-lg font-bold text-gold">${Math.round(builderTotals.monthlyPayment).toLocaleString()}/mo</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-xs text-muted-foreground">Bi-weekly</span>
-                      <span className="text-sm font-medium text-foreground">${Math.round(builderBiweekly)}/bi-wk</span>
+                      <span className="text-sm font-medium text-foreground">${Math.round(builderTotals.biweeklyPayment)}/bi-wk</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-xs text-muted-foreground">{term} months @ {rate}%</span>
-                      <span className="text-xs text-muted-foreground">Total: ${Math.round(builderMonthly * term).toLocaleString()}</span>
+                      <span className="text-xs text-muted-foreground">Total: ${Math.round(builderTotals.monthlyPayment * term).toLocaleString()}</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <CheckCircle className="w-3 h-3 text-green-400" />
-                    <span>Rate disclaimer and fee schedule will be included</span>
+                    <span>Rate disclaimer, AI disclosure, package terms, and fee schedule will be included. Follow-up task uses local dry-run mode.</span>
                   </div>
                   <div className="flex gap-2">
                     <Button variant="gold" size="sm" className="flex-1 text-xs"><Send className="w-3 h-3 mr-1" /> Send Quote</Button>

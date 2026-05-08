@@ -27,11 +27,13 @@ export type LeadSource =
   | 'email'
   | 'other';
 
-export type ConversationStatus = 'active' | 'pending' | 'idle' | 'closed' | 'escalated';
+export type ConversationStatus = 'active' | 'pending' | 'idle' | 'closed' | 'escalated' | 'restricted';
 
 export type MessageRole = 'customer' | 'agent' | 'system' | 'manager';
 
 export type Sentiment = 'positive' | 'neutral' | 'frustrated' | 'angry' | 'unknown';
+
+export type MaintenanceStatus = 'ok' | 'due_soon' | 'overdue';
 
 export type QuoteStatus = 'draft' | 'sent' | 'viewed' | 'accepted' | 'expired' | 'revised';
 
@@ -91,6 +93,8 @@ export interface Lead {
   tags: string[];
   vehicleInterests: string[];
   conversationIds: string[];
+  leadScore?: number;
+  scoreRationale?: string[];
 }
 
 export interface Conversation {
@@ -115,6 +119,8 @@ export interface Conversation {
   customerName: string;
   customerPhone?: string;
   summary?: string;
+  restricted?: boolean;
+  restrictionReason?: string;
   messages: Message[];
 }
 
@@ -194,6 +200,11 @@ export interface Vehicle {
   inventorySource: 'vauto' | 'manual' | 'feed';
   daysOnLot?: number;
   estimatedPayment?: number;
+  lastServiceDate?: string;
+  lastServiceMileage?: number;
+  nextServiceDueDate?: string;
+  nextServiceDueMileage?: number;
+  maintenanceStatus?: MaintenanceStatus;
 }
 
 export interface VehicleMatch {
@@ -238,6 +249,9 @@ export interface QuoteScenario {
   biweeklyPayment?: number;
   taxes: number;
   fees: number;
+  packages?: { id: string; label: string; price: number; taxable?: boolean }[];
+  taxRate?: number;
+  taxSource?: string;
 }
 
 export interface QuoteRevision {

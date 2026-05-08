@@ -96,6 +96,11 @@ CREATE TABLE IF NOT EXISTS vehicles (
   inventory_source TEXT DEFAULT 'manual',
   days_on_lot INTEGER DEFAULT 0,
   estimated_payment NUMERIC(10,2),
+  last_service_date TIMESTAMPTZ,
+  last_service_mileage INTEGER,
+  next_service_due_date TIMESTAMPTZ,
+  next_service_due_mileage INTEGER,
+  maintenance_status TEXT NOT NULL DEFAULT 'ok' CHECK (maintenance_status IN ('ok', 'due_soon', 'overdue')),
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );
