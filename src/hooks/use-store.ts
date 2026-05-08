@@ -10,6 +10,7 @@ import type {
   FinancePacket, Appointment, AuditEvent, Escalation, IntegrationConfig,
   ConversationStatus, LeadStage, Sentiment,
 } from '@/types/domain';
+import { scoreLead } from '@/services/lead-scoring';
 
 type StoreState = {
   leads: Lead[];
@@ -162,13 +163,49 @@ export function useStore<T>(selector: (s: StoreState) => T): T {
   );
 }
 
+function summarizeConversation(conversation: Conversation, messages: Message[]): string {
+  if (conversation.summary) return conversation.summary;
+  const customerMessages = messages.filter(message => message.role === 'customer').slice(-2);
+  if (customerMessages.length === 0) return 'No customer message summary available yet.';
+  return customerMessages.map(message => message.content).join(' ').slice(0, 180);
+}
+
 export function useLeads() {
-  return useStore(s => s.leads);
+  return useStore(s => {
+    const allMessages = Object.values(s.messages).flat();
+    return s.leads.map(lead => {
+      const leadConversations = s.conversations.filter(conversation => conversation.leadId === lead.id);
+      const score = scoreLead(lead, leadConversations, allMessages);
+      return {
+        ...lead,
+        leadScore: score.total,
+        priority: score.priority,
+        scoreRationale: score.signals.length ? score.signals : ['limited engagement data'],
+      };
+    });
+  });
 }
 
 export function useConversations() {
-  return useStore(s => s.conversations);
+  return useStore(s => s.conversations.map(conversation => {
+    const messages = s.messages[conversation.id] || EMPTY_ARRAY;
+    const restricted = conversation.restricted || conversation.status === 'restricted' || conversation.optedOut || conversation.suppressionActive;
+    return {
+      ...conversation,
+      restricted,
+      restrictionReason: restricted
+        ? conversation.optedOut
+          ? 'Customer opted out.'
+          : conversation.suppressionActive
+          ? 'Suppression is active.'
+          : conversation.restrictionReason || 'Conversation is restricted.'
+        : undefined,
+      summary: summarizeConversation(conversation, messages),
+      messages,
+    };
+  }));
 }
+
 
 export function useActiveConversation() {
   return useStore(s => {
