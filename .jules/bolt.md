@@ -23,3 +23,6 @@
 ## 2026-05-08 - Single-pass early-exit for top-k selection
 **Learning:** Found an instance in `LiveAgentConsole` where `.filter(...).slice(0, 3)` was used to select the top 3 items from a potentially large list. This forces an O(N) traversal of the entire array and allocates an intermediate array before slicing.
 **Action:** When finding the first `K` items matching a condition in a large array, replace chained array methods with a single-pass `for` loop and an early `break` statement. This improves performance by avoiding full array traversal and reducing memory allocations.
+## 2026-05-09 - Single-pass array reduction instead of multiple .filter() calls for object sets
+**Learning:** Found that `forecastDemand` in `pricingService.ts` was chaining multiple `.filter()` operations on the same arrays (e.g., `leads`, `quotes`, `conversations`, `messages`, `vehicles`) sequentially to derive matching/active/hot datasets. This caused multiple O(N) traversals and redundant array allocations.
+**Action:** Replaced chained `.filter()` operations on large core data models with single-pass `for` loops. This groups calculations efficiently, avoids intermediate memory allocations, and speeds up derived data aggregation when working with large collections.
