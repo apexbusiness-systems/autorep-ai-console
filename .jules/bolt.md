@@ -26,3 +26,6 @@
 ## 2026-05-09 - Single-pass array reduction instead of multiple .filter() calls for object sets
 **Learning:** Found that `forecastDemand` in `pricingService.ts` was chaining multiple `.filter()` operations on the same arrays (e.g., `leads`, `quotes`, `conversations`, `messages`, `vehicles`) sequentially to derive matching/active/hot datasets. This caused multiple O(N) traversals and redundant array allocations.
 **Action:** Replaced chained `.filter()` operations on large core data models with single-pass `for` loops. This groups calculations efficiently, avoids intermediate memory allocations, and speeds up derived data aggregation when working with large collections.
+## 2026-05-10 - Extracted invariant calculations from array loops
+**Learning:** Found that `leadMatchesVehicle` was recalculating `vehicleNeedles` using `[vehicle.make, vehicle.model...].map().filter()` inside a `.filter()` call applied to every item in the `leads` list.
+**Action:** Always extract invariant calculations (like search query formatting or object processing) outside of loops and `.filter()` operations to avoid unnecessary object allocation and processing overhead during N-iterations.

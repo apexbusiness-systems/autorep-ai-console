@@ -82,11 +82,11 @@ function vehicleText(vehicle?: Vehicle | null): string {
   return `${vehicle.year} ${vehicle.make} ${vehicle.model} ${vehicle.trim} ${vehicle.body}`.toLowerCase();
 }
 
-function leadMatchesVehicle(lead: Lead, vehicle?: Vehicle | null): boolean {
+function leadMatchesVehicle(lead: Lead, vehicle?: Vehicle | null, needles?: string[]): boolean {
   if (!vehicle) return true;
   const haystack = `${lead.vehicleInterests.join(' ')} ${lead.notes ?? ''}`.toLowerCase();
-  const needles = [vehicle.make, vehicle.model, vehicle.trim, vehicle.body].map(v => v.toLowerCase()).filter(Boolean);
-  return needles.some(needle => haystack.includes(needle));
+  const searchNeedles = needles || [vehicle.make, vehicle.model, vehicle.trim, vehicle.body].map(v => v.toLowerCase()).filter(Boolean);
+  return searchNeedles.some(needle => haystack.includes(needle));
 }
 
 function quoteMatchesVehicle(quote: Quote, vehicle?: Vehicle | null): boolean {
@@ -103,39 +103,92 @@ export function forecastDemand(input: ForecastDemandInput): DemandForecast {
   const vehicle = input.vehicle ?? null;
   const vehicles = input.vehicles ?? (vehicle ? [vehicle] : []);
 
-  const matchingLeads = leads.filter(lead => leadMatchesVehicle(lead, vehicle));
-  const recentLeads = matchingLeads.filter(lead => daysBetween(now, lead.lastActivityAt) <= 14);
-  const hotLeads = matchingLeads.filter(lead => lead.priority === 'hot' || ['quote_sent', 'appointment_set', 'finance_intake', 'negotiation'].includes(lead.stage));
-  const matchingQuotes = quotes.filter(quote => quoteMatchesVehicle(quote, vehicle));
-  const activeQuotes = matchingQuotes.filter(quote => ['sent', 'viewed', 'accepted', 'revised'].includes(quote.status));
-  const matchingLeadIds = new Set(matchingLeads.map(lead => lead.id));
-  const relevantConversations = conversations.filter(convo => matchingLeadIds.has(convo.leadId));
-  const activeConversations = relevantConversations.filter(convo => ['active', 'pending', 'escalated'].includes(convo.status));
-  const relevantConversationIds = new Set(relevantConversations.map(convo => convo.id));
-  const recentCustomerMessages = messages.filter(message => relevantConversationIds.has(message.conversationId) && message.role === 'customer' && daysBetween(now, message.timestamp) <= 14);
+  // Pre-calculate vehicle needles
+  const vehicleNeedles = vehicle ? [vehicle.make, vehicle.model, vehicle.trim, vehicle.body].map(v => v.toLowerCase()).filter(Boolean) : [];
+
+  let matchingLeadsCount = 0;
+  let recentLeadsCount = 0;
+  let hotLeadsCount = 0;
+  const matchingLeadIds = new Set<string>();
+
+  for (const lead of leads) {
+    if (leadMatchesVehicle(lead, vehicle, vehicleNeedles)) {
+      matchingLeadsCount++;
+      matchingLeadIds.add(lead.id);
+      if (daysBetween(now, lead.lastActivityAt) <= 14) {
+        recentLeadsCount++;
+      }
+      if (lead.priority === 'hot' || ['quote_sent', 'appointment_set', 'finance_intake', 'negotiation'].includes(lead.stage)) {
+        hotLeadsCount++;
+      }
+    }
+  }
+
+  let matchingQuotesCount = 0;
+  let activeQuotesCount = 0;
+  for (const quote of quotes) {
+    if (quoteMatchesVehicle(quote, vehicle)) {
+      matchingQuotesCount++;
+      if (['sent', 'viewed', 'accepted', 'revised'].includes(quote.status)) {
+        activeQuotesCount++;
+      }
+    }
+  }
+
+  let relevantConversationsCount = 0;
+  let activeConversationsCount = 0;
+  const relevantConversationIds = new Set<string>();
+  for (const convo of conversations) {
+    if (matchingLeadIds.has(convo.leadId)) {
+      relevantConversationsCount++;
+      relevantConversationIds.add(convo.id);
+      if (['active', 'pending', 'escalated'].includes(convo.status)) {
+        activeConversationsCount++;
+      }
+    }
+  }
+
+  let recentCustomerMessagesCount = 0;
+  for (const message of messages) {
+    if (relevantConversationIds.has(message.conversationId) && message.role === 'customer' && daysBetween(now, message.timestamp) <= 14) {
+      recentCustomerMessagesCount++;
+    }
+  }
+
+  let availableInventory = 0;
+  let totalDaysOnLot = 0;
+  for (const item of vehicles) {
+    if (item.status === 'available') {
+      availableInventory++;
+    }
+    totalDaysOnLot += safeNumber(item.daysOnLot);
+  }
+
+  if (vehicles.length === 0 && vehicle?.status === 'available') {
+    availableInventory = 1;
+  }
 
   const averageDaysOnLot = vehicles.length
-    ? vehicles.reduce((sum, item) => sum + safeNumber(item.daysOnLot), 0) / vehicles.length
+    ? totalDaysOnLot / vehicles.length
     : safeNumber(vehicle?.daysOnLot, 0);
-  const availableInventory = vehicles.filter(item => item.status === 'available').length || (vehicle?.status === 'available' ? 1 : 0);
 
   let score = 20;
   const signals: string[] = [];
 
-  score += recentLeads.length * 8;
-  if (recentLeads.length) signals.push(`${recentLeads.length} recent matched lead${recentLeads.length === 1 ? '' : 's'}`);
+  score += recentLeadsCount * 8;
+  if (recentLeadsCount) signals.push(`${recentLeadsCount} recent matched lead${recentLeadsCount === 1 ? '' : 's'}`);
 
-  score += hotLeads.length * 10;
-  if (hotLeads.length) signals.push(`${hotLeads.length} high-intent lead${hotLeads.length === 1 ? '' : 's'}`);
+  score += hotLeadsCount * 10;
+  if (hotLeadsCount) signals.push(`${hotLeadsCount} high-intent lead${hotLeadsCount === 1 ? '' : 's'}`);
 
-  score += activeQuotes.length * 12;
-  if (activeQuotes.length) signals.push(`${activeQuotes.length} active quote${activeQuotes.length === 1 ? '' : 's'}`);
+  score += activeQuotesCount * 12;
+  if (activeQuotesCount) signals.push(`${activeQuotesCount} active quote${activeQuotesCount === 1 ? '' : 's'}`);
 
-  score += activeConversations.length * 5;
-  if (activeConversations.length) signals.push(`${activeConversations.length} active conversation${activeConversations.length === 1 ? '' : 's'}`);
+  score += activeConversationsCount * 5;
+  if (activeConversationsCount) signals.push(`${activeConversationsCount} active conversation${activeConversationsCount === 1 ? '' : 's'}`);
 
-  score += Math.min(recentCustomerMessages.length * 2, 16);
-  if (recentCustomerMessages.length) signals.push(`${recentCustomerMessages.length} recent customer message${recentCustomerMessages.length === 1 ? '' : 's'}`);
+  score += Math.min(recentCustomerMessagesCount * 2, 16);
+  if (recentCustomerMessagesCount) signals.push(`${recentCustomerMessagesCount} recent customer message${recentCustomerMessagesCount === 1 ? '' : 's'}`);
 
   if (availableInventory <= 1) {
     score += 8;
@@ -155,12 +208,12 @@ export function forecastDemand(input: ForecastDemandInput): DemandForecast {
 
   score = Math.round(clamp(score, 0, 100));
   const band = score >= 70 ? 'high' : score >= 40 ? 'moderate' : 'low';
-  const forecastUnits30d = Math.max(0, Math.round((score / 25) + activeQuotes.length * 0.7 + hotLeads.length * 0.5));
-  const confidence = clamp(Math.round((45 + Math.min(matchingLeads.length + matchingQuotes.length + relevantConversations.length, 12) * 4) - (matchingLeads.length === 0 ? 10 : 0)), 35, 92);
+  const forecastUnits30d = Math.max(0, Math.round((score / 25) + activeQuotesCount * 0.7 + hotLeadsCount * 0.5));
+  const confidence = clamp(Math.round((45 + Math.min(matchingLeadsCount + matchingQuotesCount + relevantConversationsCount, 12) * 4) - (matchingLeadsCount === 0 ? 10 : 0)), 35, 92);
 
   const trend = ['Now', '+7d', '+14d', '+21d'].map((label, index) => ({
     label,
-    demand: Math.round(clamp(score + (index - 1) * (recentLeads.length + activeQuotes.length) * 2 - Math.max(averageDaysOnLot - 45, 0) / 8, 0, 100)),
+    demand: Math.round(clamp(score + (index - 1) * (recentLeadsCount + activeQuotesCount) * 2 - Math.max(averageDaysOnLot - 45, 0) / 8, 0, 100)),
   }));
 
   if (signals.length === 0) signals.push(vehicleText(vehicle) ? 'sparse matched demand data' : 'portfolio-level sparse demand data');
