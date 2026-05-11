@@ -1003,20 +1003,55 @@ function DashboardCharts() {
 
   const demandForecast = useMemo(() => forecastDemand({ vehicles, leads, conversations, quotes }), [vehicles, leads, conversations, quotes]);
   const maintenanceReminders = useMemo(() => getMaintenanceReminders(vehicles), [vehicles]);
+  // ⚡ Bolt Performance Optimization: Single-pass array reduction
+  // Replaced multiple O(N) array .filter() and .reduce() operations with a single pass O(N) loop
+  // Expected impact: Reduces CPU cycles and memory allocations when processing large lists
   const inventoryInsights = useMemo(() => {
-    const available = vehicles.filter(vehicle => vehicle.status === 'available');
-    const aging = vehicles.filter(vehicle => (vehicle.daysOnLot ?? 0) > 30);
-    const averagePrice = available.length ? Math.round(available.reduce((sum, vehicle) => sum + vehicle.price, 0) / available.length) : 0;
-    const topSuggestion = available[0] ? suggestDynamicPrice({ vehicle: available[0], vehicles, leads, conversations, quotes, basePrice: available[0].price }) : null;
-    return { available: available.length, aging: aging.length, averagePrice, topSuggestion };
+    let availableCount = 0;
+    let agingCount = 0;
+    let availablePriceSum = 0;
+    let firstAvailable = null;
+
+    for (let i = 0; i < vehicles.length; i++) {
+      const vehicle = vehicles[i];
+      if (vehicle.status === 'available') {
+        availableCount++;
+        availablePriceSum += vehicle.price;
+        if (!firstAvailable) firstAvailable = vehicle;
+      }
+      if ((vehicle.daysOnLot ?? 0) > 30) {
+        agingCount++;
+      }
+    }
+
+    const averagePrice = availableCount ? Math.round(availablePriceSum / availableCount) : 0;
+    const topSuggestion = firstAvailable ? suggestDynamicPrice({ vehicle: firstAvailable, vehicles, leads, conversations, quotes, basePrice: firstAvailable.price }) : null;
+
+    return { available: availableCount, aging: agingCount, averagePrice, topSuggestion };
   }, [vehicles, leads, conversations, quotes]);
 
-  const conversionTrendData = useMemo(() => [
-    { label: 'New', value: leads.filter(lead => lead.stage === 'new').length },
-    { label: 'Interest', value: leads.filter(lead => lead.stage === 'vehicle_interest').length },
-    { label: 'Quoted', value: leads.filter(lead => lead.stage === 'quote_sent').length },
-    { label: 'Won', value: leads.filter(lead => lead.stage === 'closed_won').length },
-  ], [leads]);
+  // ⚡ Bolt Performance Optimization: Single-pass array reduction
+  // Replaced multiple O(N) array .filter() operations with a single pass O(N) loop
+  // Expected impact: Reduces CPU cycles and memory allocations when processing large lists
+  const conversionTrendData = useMemo(() => {
+    let newCount = 0;
+    let interestCount = 0;
+    let quotedCount = 0;
+    let wonCount = 0;
+    for (let i = 0; i < leads.length; i++) {
+      const stage = leads[i].stage;
+      if (stage === 'new') newCount++;
+      else if (stage === 'vehicle_interest') interestCount++;
+      else if (stage === 'quote_sent') quotedCount++;
+      else if (stage === 'closed_won') wonCount++;
+    }
+    return [
+      { label: 'New', value: newCount },
+      { label: 'Interest', value: interestCount },
+      { label: 'Quoted', value: quotedCount },
+      { label: 'Won', value: wonCount },
+    ];
+  }, [leads]);
 
   const topLeadInsights = useMemo(() => [...leads].sort((a, b) => (b.leadScore ?? 0) - (a.leadScore ?? 0)).slice(0, 4), [leads]);
   const conversationSummaries = useMemo(() => conversations.slice(0, 4), [conversations]);
