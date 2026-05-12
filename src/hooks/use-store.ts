@@ -171,10 +171,18 @@ function summarizeConversation(conversation: Conversation, messages: Message[]):
 }
 
 export function useLeads() {
-  return useStore(s => {
-    const allMessages = Object.values(s.messages).flat();
-    return s.leads.map(lead => {
-      const leadConversations = s.conversations.filter(conversation => conversation.leadId === lead.id);
+  const baseLeads = useStore(s => s.leads);
+  const baseConversations = useStore(s => s.conversations);
+  const messagesDict = useStore(s => s.messages);
+
+  // Performance Fix: Deriving state inside useMemo rather than inside useStore
+  // selector directly. This prevents referential inequality (from .map) causing
+  // excessive component re-renders on unrelated store updates.
+  // Impact: Reduces React rendering workload when any unrelated state changes.
+  return useMemo(() => {
+    const allMessages = Object.values(messagesDict).flat();
+    return baseLeads.map(lead => {
+      const leadConversations = baseConversations.filter(conversation => conversation.leadId === lead.id);
       const score = scoreLead(lead, leadConversations, allMessages);
       return {
         ...lead,
@@ -183,27 +191,36 @@ export function useLeads() {
         scoreRationale: score.signals.length ? score.signals : ['limited engagement data'],
       };
     });
-  });
+  }, [baseLeads, baseConversations, messagesDict]);
 }
 
 export function useConversations() {
-  return useStore(s => s.conversations.map(conversation => {
-    const messages = s.messages[conversation.id] || EMPTY_ARRAY;
-    const restricted = conversation.restricted || conversation.status === 'restricted' || conversation.optedOut || conversation.suppressionActive;
-    return {
-      ...conversation,
-      restricted,
-      restrictionReason: restricted
-        ? conversation.optedOut
-          ? 'Customer opted out.'
-          : conversation.suppressionActive
-          ? 'Suppression is active.'
-          : conversation.restrictionReason || 'Conversation is restricted.'
-        : undefined,
-      summary: summarizeConversation(conversation, messages),
-      messages,
-    };
-  }));
+  const baseConversations = useStore(s => s.conversations);
+  const messagesDict = useStore(s => s.messages);
+
+  // Performance Fix: Memoize the mapped conversations list based on the base store data
+  // to avoid creating new object references in the useStore selector,
+  // preventing constant re-renders when other state changes.
+  // Impact: Reduces React rendering workload when any unrelated state changes.
+  return useMemo(() => {
+    return baseConversations.map(conversation => {
+      const messages = messagesDict[conversation.id] || EMPTY_ARRAY;
+      const restricted = conversation.restricted || conversation.status === 'restricted' || conversation.optedOut || conversation.suppressionActive;
+      return {
+        ...conversation,
+        restricted,
+        restrictionReason: restricted
+          ? conversation.optedOut
+            ? 'Customer opted out.'
+            : conversation.suppressionActive
+            ? 'Suppression is active.'
+            : conversation.restrictionReason || 'Conversation is restricted.'
+          : undefined,
+        summary: summarizeConversation(conversation, messages),
+        messages,
+      };
+    });
+  }, [baseConversations, messagesDict]);
 }
 
 
