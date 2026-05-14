@@ -179,11 +179,31 @@ export function useLeads() {
   // selector directly. This prevents referential inequality (from .map) causing
   // excessive component re-renders on unrelated store updates.
   // Impact: Reduces React rendering workload when any unrelated state changes.
+  // ⚡ Bolt Optimization: Pre-group conversations and messages by Lead to eliminate
+  // O(N) array traversals inside the baseLeads loop.
   return useMemo(() => {
-    const allMessages = Object.values(messagesDict).flat();
+    const convosByLead = new Map<string, Conversation[]>();
+    for (let i = 0; i < baseConversations.length; i++) {
+      const c = baseConversations[i];
+      if (!c.leadId) continue;
+      const list = convosByLead.get(c.leadId);
+      if (list) list.push(c);
+      else convosByLead.set(c.leadId, [c]);
+    }
+
     return baseLeads.map(lead => {
-      const leadConversations = baseConversations.filter(conversation => conversation.leadId === lead.id);
-      const score = scoreLead(lead, leadConversations, allMessages);
+      const leadConversations = convosByLead.get(lead.id) || EMPTY_ARRAY as unknown as Conversation[];
+      const leadMessages: Message[] = [];
+      for (let i = 0; i < leadConversations.length; i++) {
+        const msgs = messagesDict[leadConversations[i].id];
+        if (msgs) {
+          for (let j = 0; j < msgs.length; j++) {
+            leadMessages.push(msgs[j]);
+          }
+        }
+      }
+
+      const score = scoreLead(lead, leadConversations, leadMessages);
       return {
         ...lead,
         leadScore: score.total,

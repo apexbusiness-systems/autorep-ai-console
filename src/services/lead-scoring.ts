@@ -53,8 +53,8 @@ const INTENT_SIGNALS: { pattern: RegExp; weight: number; label: string }[] = [
 
 export function scoreLead(
   lead: Lead,
-  conversations: Conversation[],
-  messages: Message[]
+  leadConversations: Conversation[],
+  leadMessages: Message[]
 ): LeadScoreBreakdown {
   const signals: string[] = [];
 
@@ -63,14 +63,12 @@ export function scoreLead(
 
   // 2. Engagement Score (0-25)
   let engagementScore = 0;
-  const leadConversations = conversations.filter(c => c.leadId === lead.id);
-  const leadMessages = messages.filter(m =>
-    leadConversations.some(c => c.id === m.conversationId) && m.role === 'customer'
-  );
+  // ⚡ Bolt Optimization: assume conversations and messages are already pre-filtered for this lead
+  const customerMessages = leadMessages.filter(m => m.role === 'customer');
 
   // Message volume (max 10 points)
-  engagementScore += Math.min(leadMessages.length * 2, 10);
-  if (leadMessages.length >= 5) signals.push("high-engagement");
+  engagementScore += Math.min(customerMessages.length * 2, 10);
+  if (customerMessages.length >= 5) signals.push("high-engagement");
 
   // Recency (max 10 points) — how recently did they last message?
   if (lead.lastActivityAt) {
@@ -100,7 +98,7 @@ export function scoreLead(
 
   // 3. Intent Score (0-25)
   let intentScore = 0;
-  const allCustomerText = leadMessages.map(m => m.content).join(" ");
+  const allCustomerText = customerMessages.map(m => m.content).join(" ");
 
   for (const signal of INTENT_SIGNALS) {
     if (signal.pattern.test(allCustomerText)) {
