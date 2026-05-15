@@ -64,8 +64,9 @@ export function scoreLead(
   // 2. Engagement Score (0-25)
   let engagementScore = 0;
   const leadConversations = conversations.filter(c => c.leadId === lead.id);
+  const leadConversationIds = new Set(leadConversations.map(c => c.id));
   const leadMessages = messages.filter(m =>
-    leadConversations.some(c => c.id === m.conversationId) && m.role === 'customer'
+    leadConversationIds.has(m.conversationId) && m.role === 'customer'
   );
 
   // Message volume (max 10 points)
