@@ -180,10 +180,19 @@ export function useLeads() {
   // excessive component re-renders on unrelated store updates.
   // Impact: Reduces React rendering workload when any unrelated state changes.
   return useMemo(() => {
-    const allMessages = Object.values(messagesDict).flat();
+    // ⚡ Bolt: Pre-group conversations by leadId to avoid O(N*M) lookups
+    const conversationsByLead = new Map<string, Conversation[]>();
+    for (const conv of baseConversations) {
+      if (!conv.leadId) continue;
+      const existing = conversationsByLead.get(conv.leadId) || [];
+      existing.push(conv);
+      conversationsByLead.set(conv.leadId, existing);
+    }
+
     return baseLeads.map(lead => {
-      const leadConversations = baseConversations.filter(conversation => conversation.leadId === lead.id);
-      const score = scoreLead(lead, leadConversations, allMessages);
+      const leadConversations = conversationsByLead.get(lead.id) || [];
+      const leadMessages = leadConversations.flatMap(c => messagesDict[c.id] || []);
+      const score = scoreLead(lead, leadConversations, leadMessages);
       return {
         ...lead,
         leadScore: score.total,
