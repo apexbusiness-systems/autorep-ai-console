@@ -1,34 +1,3 @@
-## 2026-04-06 - Missing array memoization caused unnecessary renders
-**Learning:** Found that pages like `ManagerPage` and `LeadsPage` were doing expensive array `.filter` operations (e.g. `conversations.filter(...)`) synchronously during render, recalculating even when the underlying data hadn't changed (e.g. just switching tabs).
-**Action:** When a page calculates derived lists or counts from store arrays, wrap them in `useMemo` so they're only recomputed when the array data itself changes.
-## 2025-04-07 - Zustand store selector anti-pattern causes excessive re-renders
-**Learning:** Discovered that returning derived arrays directly within `useStore` selectors (e.g., `useStore(s => s.quotes.filter(...))`) breaks referential equality in Zustand, causing components to re-render on *every* store update (even unrelated ones).
-**Action:** When deriving data from the global store, select the entire list (or necessary slice) via the selector first, then apply the derivation (like `.filter()` or `.find()`) locally using `useMemo`.
-## 2025-04-08 - Missing array memoization caused unnecessary renders on keystrokes
-**Learning:** Found that `LiveAgentConsole` was doing expensive array `.filter` operations (e.g. `messages.filter(...)`) synchronously during render, recalculating even when the underlying data hadn't changed, notably on every keystroke when `inputValue` changes.
-**Action:** When a page calculates derived lists from store arrays, wrap them in `useMemo` so they're only recomputed when the array data itself changes.
-## 2025-04-09 - Zustand `useStore` strict equality anti-pattern
-**Learning:** Found that fallback empty arrays (e.g. `s.messages[id] || []`) in `useStore` selectors cause consumers to re-render on *every* single state change (even unrelated ones) because `[] !== []` and Zustand uses strict reference equality (`===`) by default.
-**Action:** Always declare a module-level constant like `const EMPTY_ARRAY = []` and return that as the fallback in Zustand selectors when an array field might be missing.
-## 2026-04-10 - Deferred Search Queries
-**Learning:** Found that `searchQuery` in `ConversationsPage` was directly tied to a `useMemo` block that filtered a list synchronously on every keystroke, leading to possible UI stuttering.
-**Action:** When performing list filtering based on user input, use React's `useDeferredValue` to defer the expensive filtering operation while keeping the input responsive.
-## 2025-04-17 - Avoid duplicated inline array traversals in different useMemo blocks
-**Learning:** Found that `ManagerPage` was recalculating the same O(N) array `.filter` operations for `aiCount` and `humanCount` multiple times across different `useMemo` hooks (`handlerData` and `timelineData`).
-**Action:** When the same derived array calculation is needed by multiple sibling component states, extract it into its own component-level `useMemo` hook and pass it as a dependency, preventing redundant traversals.
-## 2025-04-18 - Single-pass array reduction instead of multiple .filter() calls
-**Learning:** Found that pages like `ManagerPage`, `LeadsPage`, and `FinancePage` were chaining multiple `.filter().length` or similar operations on the same large array (e.g., `conversations`, `followUpTasks`, `packets`) sequentially inside `useMemo` hooks. This caused multiple O(N) traversals and redundant array allocations.
-**Action:** When deriving multiple subsets or counts from the same list, replace multiple `.filter()` calls with a single-pass `for` loop to categorize or count items simultaneously. This prevents redundant O(N) array traversals and reduces intermediate memory allocations.
-## 2024-05-18 - Single-Pass Array Reduction\n**Learning:** Found multiple chained `.filter()` calls on large lists in `VehiclesPage.tsx` and `ConversationsPage.tsx`, which causes multiple O(N) traversals and redundant array allocations.\n**Action:** Replaced chained `.filter()` operations with a single pass that combines all condition checks. Also realized that the return of `.filter()` is a new array, which means it can be safely sorted directly (e.g., `filtered.sort(...)`) instead of spreading into a new array (`[...filtered].sort(...)`).
-## 2026-05-08 - Single-pass early-exit for top-k selection
-**Learning:** Found an instance in `LiveAgentConsole` where `.filter(...).slice(0, 3)` was used to select the top 3 items from a potentially large list. This forces an O(N) traversal of the entire array and allocates an intermediate array before slicing.
-**Action:** When finding the first `K` items matching a condition in a large array, replace chained array methods with a single-pass `for` loop and an early `break` statement. This improves performance by avoiding full array traversal and reducing memory allocations.
-## 2026-05-09 - Single-pass array reduction instead of multiple .filter() calls for object sets
-**Learning:** Found that `forecastDemand` in `pricingService.ts` was chaining multiple `.filter()` operations on the same arrays (e.g., `leads`, `quotes`, `conversations`, `messages`, `vehicles`) sequentially to derive matching/active/hot datasets. This caused multiple O(N) traversals and redundant array allocations.
-**Action:** Replaced chained `.filter()` operations on large core data models with single-pass `for` loops. This groups calculations efficiently, avoids intermediate memory allocations, and speeds up derived data aggregation when working with large collections.
-## 2026-05-10 - Extracted invariant calculations from array loops
-**Learning:** Found that `leadMatchesVehicle` was recalculating `vehicleNeedles` using `[vehicle.make, vehicle.model...].map().filter()` inside a `.filter()` call applied to every item in the `leads` list.
-**Action:** Always extract invariant calculations (like search query formatting or object processing) outside of loops and `.filter()` operations to avoid unnecessary object allocation and processing overhead during N-iterations.
-## 2026-05-11 - Zustand store selector anti-pattern with .map() causes excessive re-renders
-**Learning:** Returning `.map()` inside `useStore` selectors (like `useLeads()` and `useConversations()`) causes the same referential inequality issue as `.filter()`. Because `[...].map()` creates a new array reference on every invocation, Zustand forces re-renders on *every* store update (e.g. adding a vehicle) even if leads/conversations haven't changed.
-**Action:** Extract the base array selection first using `useStore`, and wrap the `.map()` transformation inside a `useMemo` block that depends only on the required base state pieces.
+## 2024-05-18 - Replacing chained array operations with a single pass backward search.
+**Learning:** For arrays containing chat messages or time-series data, searching for the "last K" matches using `.filter(...).slice(-K)` scales poorly ($O(N)$ with intermediate allocations). An application managing numerous concurrent conversations recalculating this iteratively on rendering boundaries suffers compounded degradation.
+**Action:** Use a single-pass backward iteration `for (let i = arr.length - 1; i >= 0; i--)` exiting early when `K` matches are found. Combine with `unshift()` or reversed array insertion to preserve chronological order without reversing the entire array later.

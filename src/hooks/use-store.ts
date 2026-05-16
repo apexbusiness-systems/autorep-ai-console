@@ -165,7 +165,19 @@ export function useStore<T>(selector: (s: StoreState) => T): T {
 
 function summarizeConversation(conversation: Conversation, messages: Message[]): string {
   if (conversation.summary) return conversation.summary;
-  const customerMessages = messages.filter(message => message.role === 'customer').slice(-2);
+
+  // ⚡ Bolt Performance Optimization: Single-pass backward search for top-k elements
+  // Replaced \`messages.filter(...).slice(-2)\` with a single-pass backward loop.
+  // This avoids traversing the entire array and creating intermediate allocations.
+  const customerMessages = [];
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i].role === 'customer') {
+      // Use unshift to keep the chronological order, since we iterate backwards
+      customerMessages.unshift(messages[i]);
+      if (customerMessages.length === 2) break;
+    }
+  }
+
   if (customerMessages.length === 0) return 'No customer message summary available yet.';
   return customerMessages.map(message => message.content).join(' ').slice(0, 180);
 }
