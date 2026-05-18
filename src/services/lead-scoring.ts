@@ -39,6 +39,8 @@ const STAGE_WEIGHTS: Record<string, number> = {
 };
 
 // Intent signal keywords with weights
+const STAGE_KEYS = Object.keys(STAGE_WEIGHTS);
+
 const INTENT_SIGNALS: { pattern: RegExp; weight: number; label: string }[] = [
   { pattern: /\b(buy|purchase|ready to|let'?s do it|sign|close)\b/i, weight: 5, label: "purchase-intent" },
   { pattern: /\b(test drive|come in|visit|appointment|schedule|book)\b/i, weight: 4, label: "appointment-intent" },
@@ -121,7 +123,7 @@ export function scoreLead(
   let velocityScore = 0;
   if (lead.firstContactAt) {
     const daysSinceFirst = (Date.now() - new Date(lead.firstContactAt).getTime()) / (1000 * 60 * 60 * 24);
-    const stageIndex = Object.keys(STAGE_WEIGHTS).indexOf(lead.stage);
+    const stageIndex = STAGE_KEYS.indexOf(lead.stage);
 
     if (daysSinceFirst > 0 && stageIndex > 0) {
       const velocity = stageIndex / daysSinceFirst; // stages per day
