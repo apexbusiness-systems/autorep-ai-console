@@ -32,3 +32,6 @@
 ## 2026-05-11 - Zustand store selector anti-pattern with .map() causes excessive re-renders
 **Learning:** Returning `.map()` inside `useStore` selectors (like `useLeads()` and `useConversations()`) causes the same referential inequality issue as `.filter()`. Because `[...].map()` creates a new array reference on every invocation, Zustand forces re-renders on *every* store update (e.g. adding a vehicle) even if leads/conversations haven't changed.
 **Action:** Extract the base array selection first using `useStore`, and wrap the `.map()` transformation inside a `useMemo` block that depends only on the required base state pieces.
+## 2026-05-19 - Pre-group Normalized State Dictionaries
+**Learning:** When calculating properties (like scores) for N items using associated lists from normalized state objects (like M conversations and K messages), nested `.filter()` operations result in O(N*M) or O(N*K) complexity. This causes excessive CPU usage when the lists are large.
+**Action:** Always pre-group related entries by ID using a `Map` *before* iterating over the main list. Then replace the nested `.filter()` array scans with O(1) Map lookups to reduce complexity to O(N).

@@ -180,10 +180,35 @@ export function useLeads() {
   // excessive component re-renders on unrelated store updates.
   // Impact: Reduces React rendering workload when any unrelated state changes.
   return useMemo(() => {
-    const allMessages = Object.values(messagesDict).flat();
+    // Pre-group conversations and customer messages by leadId using Maps
+    // This reduces O(N*M) complexity to O(N) by replacing nested array filtering with O(1) lookups
+    const conversationsByLead = new Map<string, Conversation[]>();
+    const customerMessagesByLead = new Map<string, Message[]>();
+
+    for (const conversation of baseConversations) {
+      if (!conversationsByLead.has(conversation.leadId)) {
+        conversationsByLead.set(conversation.leadId, []);
+      }
+      conversationsByLead.get(conversation.leadId)!.push(conversation);
+
+      const convMessages = messagesDict[conversation.id];
+      if (convMessages) {
+        if (!customerMessagesByLead.has(conversation.leadId)) {
+          customerMessagesByLead.set(conversation.leadId, []);
+        }
+        const leadCustomerMessages = customerMessagesByLead.get(conversation.leadId)!;
+        for (const msg of convMessages) {
+          if (msg.role === 'customer') {
+            leadCustomerMessages.push(msg);
+          }
+        }
+      }
+    }
+
     return baseLeads.map(lead => {
-      const leadConversations = baseConversations.filter(conversation => conversation.leadId === lead.id);
-      const score = scoreLead(lead, leadConversations, allMessages);
+      const leadConversations = conversationsByLead.get(lead.id) || [];
+      const leadCustomerMessages = customerMessagesByLead.get(lead.id) || [];
+      const score = scoreLead(lead, leadConversations, leadCustomerMessages);
       return {
         ...lead,
         leadScore: score.total,
