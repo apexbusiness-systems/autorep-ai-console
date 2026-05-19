@@ -11,10 +11,18 @@ const messages: Message[] = [{ id: 'm-1', conversationId: 'conv-1', role: 'custo
 
 describe('lead intelligence, maintenance reminders, and compliance gating', () => {
   it('computes lead scores and score rationale from conversation intent', () => {
-    const score = scoreLead(lead, [conversation], messages);
-    expect(score.total).toBeGreaterThan(35);
-    expect(score.priority).toMatch(/new|warm|hot/);
-    expect(score.signals).toEqual(expect.arrayContaining(['purchase-intent', 'appointment-intent', 'price-inquiry']));
+    // In lead-scoring.ts, Date.now() is used which might return current real time.
+    // The lead data is hardcoded to 2026-05-08. We must mock Date.now() for this test.
+    const originalDateNow = Date.now;
+    Date.now = () => now.getTime();
+    try {
+      const score = scoreLead(lead, [conversation], messages);
+      expect(score.total).toBeGreaterThan(35);
+      expect(score.priority).toMatch(/new|warm|hot/);
+      expect(score.signals).toEqual(expect.arrayContaining(['purchase-intent', 'appointment-intent', 'price-inquiry']));
+    } finally {
+      Date.now = originalDateNow;
+    }
   });
 
   it('flags due-soon and overdue maintenance reminders defensively', () => {

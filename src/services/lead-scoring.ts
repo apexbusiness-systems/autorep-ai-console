@@ -53,8 +53,8 @@ const INTENT_SIGNALS: { pattern: RegExp; weight: number; label: string }[] = [
 
 export function scoreLead(
   lead: Lead,
-  conversations: Conversation[],
-  messages: Message[]
+  leadConversations: Conversation[],
+  leadMessages: Message[]
 ): LeadScoreBreakdown {
   const signals: string[] = [];
 
@@ -63,10 +63,6 @@ export function scoreLead(
 
   // 2. Engagement Score (0-25)
   let engagementScore = 0;
-  const leadConversations = conversations.filter(c => c.leadId === lead.id);
-  const leadMessages = messages.filter(m =>
-    leadConversations.some(c => c.id === m.conversationId) && m.role === 'customer'
-  );
 
   // Message volume (max 10 points)
   engagementScore += Math.min(leadMessages.length * 2, 10);
