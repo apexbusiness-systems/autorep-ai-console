@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { scoreLead } from '@/services/lead-scoring';
 import { evaluateOutboundEligibility, getMaintenanceReminders } from '@/services/maintenanceService';
 import { AI_DISCLOSURE, buildMarketingAutomationDecision } from '@/services/marketing-automation';
@@ -11,7 +11,9 @@ const messages: Message[] = [{ id: 'm-1', conversationId: 'conv-1', role: 'custo
 
 describe('lead intelligence, maintenance reminders, and compliance gating', () => {
   it('computes lead scores and score rationale from conversation intent', () => {
+    const mockDate = vi.spyOn(Date, 'now').mockReturnValue(new Date('2026-05-08T12:00:00Z').getTime());
     const score = scoreLead(lead, [conversation], messages);
+    mockDate.mockRestore();
     expect(score.total).toBeGreaterThan(35);
     expect(score.priority).toMatch(/new|warm|hot/);
     expect(score.signals).toEqual(expect.arrayContaining(['purchase-intent', 'appointment-intent', 'price-inquiry']));

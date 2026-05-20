@@ -165,7 +165,19 @@ export function useStore<T>(selector: (s: StoreState) => T): T {
 
 function summarizeConversation(conversation: Conversation, messages: Message[]): string {
   if (conversation.summary) return conversation.summary;
-  const customerMessages = messages.filter(message => message.role === 'customer').slice(-2);
+
+  // ⚡ Bolt Performance Optimization: Single-pass backward loop for top-k selection
+  // Replaced `.filter(m => m.role === 'customer').slice(-2)` with an early-exit loop.
+  // Expected impact: Prevents full O(N) array traversal and intermediate array allocations
+  // on every update, improving responsiveness when computing summaries for many conversations.
+  const customerMessages: Message[] = [];
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i].role === 'customer') {
+      customerMessages.unshift(messages[i]);
+      if (customerMessages.length === 2) break;
+    }
+  }
+
   if (customerMessages.length === 0) return 'No customer message summary available yet.';
   return customerMessages.map(message => message.content).join(' ').slice(0, 180);
 }
