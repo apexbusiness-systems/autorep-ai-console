@@ -32,3 +32,6 @@
 ## 2026-05-11 - Zustand store selector anti-pattern with .map() causes excessive re-renders
 **Learning:** Returning `.map()` inside `useStore` selectors (like `useLeads()` and `useConversations()`) causes the same referential inequality issue as `.filter()`. Because `[...].map()` creates a new array reference on every invocation, Zustand forces re-renders on *every* store update (e.g. adding a vehicle) even if leads/conversations haven't changed.
 **Action:** Extract the base array selection first using `useStore`, and wrap the `.map()` transformation inside a `useMemo` block that depends only on the required base state pieces.
+## 2026-05-12 - Backward loop for top-k selection from end of array
+**Learning:** Found that `summarizeConversation` in `use-store.ts` was using `.filter(...).slice(-2)` to get the last two customer messages. Since this runs inside `useConversations` memo for every conversation whenever messages update, it causes full O(N) traversals and repeated array allocations, leading to performance degradation.
+**Action:** When finding the last `K` items matching a condition in an array, use a single-pass backward `for` loop (starting from `length - 1`) with an early `break` statement. This changes the operation from O(N) to O(1) in most cases by avoiding full array traversal.
