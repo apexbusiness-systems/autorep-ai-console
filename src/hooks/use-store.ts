@@ -12,6 +12,8 @@ import type {
 } from '@/types/domain';
 import { scoreLead } from '@/services/lead-scoring';
 
+const EMPTY_ARRAY: Message[] = [];
+
 type StoreState = {
   leads: Lead[];
   conversations: Conversation[];
@@ -180,10 +182,27 @@ export function useLeads() {
   // excessive component re-renders on unrelated store updates.
   // Impact: Reduces React rendering workload when any unrelated state changes.
   return useMemo(() => {
-    const allMessages = Object.values(messagesDict).flat();
+    const conversationsByLead = new Map<string, typeof baseConversations>();
+    for (let i = 0; i < baseConversations.length; i++) {
+      const c = baseConversations[i];
+      let arr = conversationsByLead.get(c.leadId);
+      if (!arr) {
+        arr = [];
+        conversationsByLead.set(c.leadId, arr);
+      }
+      arr.push(c);
+    }
+
     return baseLeads.map(lead => {
-      const leadConversations = baseConversations.filter(conversation => conversation.leadId === lead.id);
-      const score = scoreLead(lead, leadConversations, allMessages);
+      const leadConversations = conversationsByLead.get(lead.id) || [];
+      const leadMessages: Message[] = [];
+      for (let i = 0; i < leadConversations.length; i++) {
+        const cId = leadConversations[i].id;
+        if (messagesDict[cId]) {
+          leadMessages.push(...messagesDict[cId]);
+        }
+      }
+      const score = scoreLead(lead, leadConversations, leadMessages);
       return {
         ...lead,
         leadScore: score.total,
@@ -230,8 +249,6 @@ export function useActiveConversation() {
     return s.conversations.find(c => c.id === s.activeConversationId) || null;
   });
 }
-
-const EMPTY_ARRAY: Message[] = [];
 
 export function useMessages(conversationId: string | null) {
   return useStore(s => (conversationId ? s.messages[conversationId] || EMPTY_ARRAY : EMPTY_ARRAY));
