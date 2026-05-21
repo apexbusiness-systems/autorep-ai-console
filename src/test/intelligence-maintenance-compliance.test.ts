@@ -11,10 +11,12 @@ const messages: Message[] = [{ id: 'm-1', conversationId: 'conv-1', role: 'custo
 
 describe('lead intelligence, maintenance reminders, and compliance gating', () => {
   it('computes lead scores and score rationale from conversation intent', () => {
+    vi.spyOn(Date, 'now').mockReturnValue(new Date('2026-05-08T12:00:00Z').getTime());
     const score = scoreLead(lead, [conversation], messages);
     expect(score.total).toBeGreaterThan(35);
     expect(score.priority).toMatch(/new|warm|hot/);
     expect(score.signals).toEqual(expect.arrayContaining(['purchase-intent', 'appointment-intent', 'price-inquiry']));
+    vi.restoreAllMocks();
   });
 
   it('flags due-soon and overdue maintenance reminders defensively', () => {
