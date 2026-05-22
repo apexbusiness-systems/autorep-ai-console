@@ -170,6 +170,8 @@ function summarizeConversation(conversation: Conversation, messages: Message[]):
   return customerMessages.map(message => message.content).join(' ').slice(0, 180);
 }
 
+const EMPTY_CONVERSATION_ARRAY: Conversation[] = [];
+
 export function useLeads() {
   const baseLeads = useStore(s => s.leads);
   const baseConversations = useStore(s => s.conversations);
@@ -180,10 +182,30 @@ export function useLeads() {
   // excessive component re-renders on unrelated store updates.
   // Impact: Reduces React rendering workload when any unrelated state changes.
   return useMemo(() => {
-    const allMessages = Object.values(messagesDict).flat();
+    // Pre-group conversations by leadId for O(1) lookup
+    const conversationsByLead = new Map<string, Conversation[]>();
+    for (let i = 0; i < baseConversations.length; i++) {
+      const conv = baseConversations[i];
+      if (!conversationsByLead.has(conv.leadId)) {
+        conversationsByLead.set(conv.leadId, []);
+      }
+      conversationsByLead.get(conv.leadId)!.push(conv);
+    }
+
     return baseLeads.map(lead => {
-      const leadConversations = baseConversations.filter(conversation => conversation.leadId === lead.id);
-      const score = scoreLead(lead, leadConversations, allMessages);
+      // O(1) lookup instead of O(N) array filter
+      const leadConversations = conversationsByLead.get(lead.id) || EMPTY_CONVERSATION_ARRAY;
+
+      // Only collect messages for THIS lead's conversations, avoiding flattening the entire dictionary
+      const leadMessages: Message[] = [];
+      for (let i = 0; i < leadConversations.length; i++) {
+        const msgs = messagesDict[leadConversations[i].id];
+        if (msgs) {
+          leadMessages.push(...msgs);
+        }
+      }
+
+      const score = scoreLead(lead, leadConversations, leadMessages);
       return {
         ...lead,
         leadScore: score.total,
