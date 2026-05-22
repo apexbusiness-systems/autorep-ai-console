@@ -63,10 +63,22 @@ export function scoreLead(
 
   // 2. Engagement Score (0-25)
   let engagementScore = 0;
-  const leadConversations = conversations.filter(c => c.leadId === lead.id);
-  const leadMessages = messages.filter(m =>
-    leadConversations.some(c => c.id === m.conversationId) && m.role === 'customer'
-  );
+  const leadConversations = [];
+  const leadConversationIds = new Set<string>();
+  for (let i = 0; i < conversations.length; i++) {
+    if (conversations[i].leadId === lead.id) {
+      leadConversations.push(conversations[i]);
+      leadConversationIds.add(conversations[i].id);
+    }
+  }
+
+  const leadMessages = [];
+  for (let i = 0; i < messages.length; i++) {
+    const m = messages[i];
+    if (m.role === 'customer' && leadConversationIds.has(m.conversationId)) {
+      leadMessages.push(m);
+    }
+  }
 
   // Message volume (max 10 points)
   engagementScore += Math.min(leadMessages.length * 2, 10);
