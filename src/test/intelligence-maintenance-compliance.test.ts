@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import { scoreLead } from '@/services/lead-scoring';
 import { evaluateOutboundEligibility, getMaintenanceReminders } from '@/services/maintenanceService';
 import { AI_DISCLOSURE, buildMarketingAutomationDecision } from '@/services/marketing-automation';
@@ -10,6 +10,14 @@ const conversation: Conversation = { id: 'conv-1', leadId: 'lead-1', channel: 's
 const messages: Message[] = [{ id: 'm-1', conversationId: 'conv-1', role: 'customer', content: 'Please send a quote, I want to buy and schedule a test drive', timestamp: '2026-05-08T11:30:00Z', channel: 'sms', delivered: true, read: true, aiGenerated: false, requiresApproval: false }];
 
 describe('lead intelligence, maintenance reminders, and compliance gating', () => {
+  beforeEach(() => {
+    vi.spyOn(Date, 'now').mockReturnValue(now.getTime());
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('computes lead scores and score rationale from conversation intent', () => {
     const score = scoreLead(lead, [conversation], messages);
     expect(score.total).toBeGreaterThan(35);
