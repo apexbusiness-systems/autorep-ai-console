@@ -165,7 +165,17 @@ export function useStore<T>(selector: (s: StoreState) => T): T {
 
 function summarizeConversation(conversation: Conversation, messages: Message[]): string {
   if (conversation.summary) return conversation.summary;
-  const customerMessages = messages.filter(message => message.role === 'customer').slice(-2);
+
+  // ⚡ Bolt Performance Optimization: Single-pass backward loop for top-K selection
+  // Replaced `.filter(...).slice(-2)` with a backward loop to prevent O(N) allocation
+  const customerMessages: Message[] = [];
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i].role === 'customer') {
+      customerMessages.unshift(messages[i]);
+      if (customerMessages.length === 2) break;
+    }
+  }
+
   if (customerMessages.length === 0) return 'No customer message summary available yet.';
   return customerMessages.map(message => message.content).join(' ').slice(0, 180);
 }
@@ -180,10 +190,28 @@ export function useLeads() {
   // excessive component re-renders on unrelated store updates.
   // Impact: Reduces React rendering workload when any unrelated state changes.
   return useMemo(() => {
-    const allMessages = Object.values(messagesDict).flat();
+    // ⚡ Bolt Performance Optimization: Grouping for O(1) lookups
+    // Pre-group conversations by leadId using a Map to avoid O(N*M) traversal
+    const conversationsByLead = new Map<string, typeof baseConversations>();
+    for (const conv of baseConversations) {
+      if (!conversationsByLead.has(conv.leadId)) {
+        conversationsByLead.set(conv.leadId, []);
+      }
+      conversationsByLead.get(conv.leadId)!.push(conv);
+    }
+
     return baseLeads.map(lead => {
-      const leadConversations = baseConversations.filter(conversation => conversation.leadId === lead.id);
-      const score = scoreLead(lead, leadConversations, allMessages);
+      const leadConversations = conversationsByLead.get(lead.id) || [];
+
+      // Instead of flattening all messages dictionary to a massive array for every lead,
+      // only extract the messages for this lead's conversations.
+      const leadMessages: typeof messagesDict[string] = [];
+      for (let i = 0; i < leadConversations.length; i++) {
+        const msgs = messagesDict[leadConversations[i].id];
+        if (msgs) leadMessages.push(...msgs);
+      }
+
+      const score = scoreLead(lead, leadConversations, leadMessages);
       return {
         ...lead,
         leadScore: score.total,

@@ -63,10 +63,20 @@ export function scoreLead(
 
   // 2. Engagement Score (0-25)
   let engagementScore = 0;
+
+  // ⚡ Bolt Performance Optimization: Single-pass array reduction
+  // Passed messages are now already pre-filtered for this lead from the caller
   const leadConversations = conversations.filter(c => c.leadId === lead.id);
-  const leadMessages = messages.filter(m =>
-    leadConversations.some(c => c.id === m.conversationId) && m.role === 'customer'
-  );
+
+  // Optimize: Avoid O(N*M) lookup inside .filter()
+  const convIdSet = new Set(leadConversations.map(c => c.id));
+  const leadMessages: Message[] = [];
+  for (let i = 0; i < messages.length; i++) {
+    const m = messages[i];
+    if (m.role === 'customer' && convIdSet.has(m.conversationId)) {
+      leadMessages.push(m);
+    }
+  }
 
   // Message volume (max 10 points)
   engagementScore += Math.min(leadMessages.length * 2, 10);
