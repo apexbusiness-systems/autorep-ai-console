@@ -1053,7 +1053,25 @@ function DashboardCharts() {
     ];
   }, [leads]);
 
-  const topLeadInsights = useMemo(() => [...leads].sort((a, b) => (b.leadScore ?? 0) - (a.leadScore ?? 0)).slice(0, 4), [leads]);
+  // ⚡ Bolt Performance Optimization: Single-pass early-exit for top-k elements
+  // Replaced `[...leads].sort(...).slice(0, 4)` with a single-pass O(N) loop
+  // Expected impact: Eliminates O(N log N) sorting overhead and redundant array allocations
+  const topLeadInsights = useMemo(() => {
+    const top: typeof leads = [];
+    for (let i = 0; i < leads.length; i++) {
+      const lead = leads[i];
+      const score = lead.leadScore ?? 0;
+      if (top.length < 4) {
+        top.push(lead);
+        top.sort((a, b) => (b.leadScore ?? 0) - (a.leadScore ?? 0));
+      } else if (score > (top[3].leadScore ?? 0)) {
+        top[3] = lead;
+        top.sort((a, b) => (b.leadScore ?? 0) - (a.leadScore ?? 0));
+      }
+    }
+    return top;
+  }, [leads]);
+
   const conversationSummaries = useMemo(() => conversations.slice(0, 4), [conversations]);
 
   return (
