@@ -30,13 +30,21 @@ const AppSidebar = ({ onNavigate }: { onNavigate?: () => void }) => {
   const escalations = useEscalations();
   const leads = useLeads();
 
-  // ⚡ Bolt Performance Optimization: Memoize array derivations
-  // Prevents O(N) recalculations of badge counts on every render
-  // Expected impact: Reduces main thread blocking during navigation or unrelated store updates
-  const activeConvos = useMemo(() => conversations.filter(c => c.status === 'active').length, [conversations]);
+  // ⚡ Bolt Performance Optimization: Combine array traversals
+  // Calculate active and unread conversations in a single O(N) pass instead of two separate traversals
+  // Expected impact: Halves the time spent calculating derived conversation states on store updates
+  const { activeConvos, unreadConversations } = useMemo(() => {
+    let active = 0;
+    let unread = 0;
+    for (const c of conversations) {
+      if (c.status === 'active') active++;
+      unread += c.unreadCount;
+    }
+    return { activeConvos: active, unreadConversations: unread };
+  }, [conversations]);
+
   const openEscalations = useMemo(() => escalations.filter(e => e.status === 'open').length, [escalations]);
   const hotLeads = useMemo(() => leads.filter(l => l.priority === 'hot').length, [leads]);
-  const unreadConversations = useMemo(() => conversations.reduce((sum, c) => sum + c.unreadCount, 0), [conversations]);
 
   const getBadge = (to: string): number | null => {
     if (to === '/' && activeConvos > 0) return activeConvos;
