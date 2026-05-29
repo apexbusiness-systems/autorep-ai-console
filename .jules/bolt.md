@@ -39,3 +39,6 @@
 ## 2024-05-24 - Do not optimize Zustand active entity selectors by wrapping mapped arrays in useMemo
 **Learning:** State selectors like Zustand optimize performance by bailing out of re-renders if the *returned value* hasn't changed (strict equality). Replacing `useStore(s => s.items.find(...))` with `useMemo` that references a fully mapped/derived array hook like `useConversations()` breaks this optimization. It forces the component to subscribe to *all* changes in the array rather than just the active object reference, causing massive performance regressions.
 **Action:** When finding a specific active item in a state selector, keep the `.find()` operation directly inside the `useStore()` callback on the base array state. Avoid deriving active items from mapped/memoized arrays if the intent is to avoid component re-renders.
+## 2025-05-18 - Set vs Array.includes lookup inside loops
+**Learning:** Found that `FinancePage` was using `Array.includes()` to verify an action within a `.filter` loop, causing an O(N*M) lookup.
+**Action:** When filtering or counting an array against a set of static strings/values, extract the reference items into a module-level `Set` and use `Set.has()` instead of `Array.includes()`. This creates a fast O(1) lookup map, avoiding N*M linear lookups.
