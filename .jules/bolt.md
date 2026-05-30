@@ -39,3 +39,6 @@
 ## 2024-05-24 - Do not optimize Zustand active entity selectors by wrapping mapped arrays in useMemo
 **Learning:** State selectors like Zustand optimize performance by bailing out of re-renders if the *returned value* hasn't changed (strict equality). Replacing `useStore(s => s.items.find(...))` with `useMemo` that references a fully mapped/derived array hook like `useConversations()` breaks this optimization. It forces the component to subscribe to *all* changes in the array rather than just the active object reference, causing massive performance regressions.
 **Action:** When finding a specific active item in a state selector, keep the `.find()` operation directly inside the `useStore()` callback on the base array state. Avoid deriving active items from mapped/memoized arrays if the intent is to avoid component re-renders.
+## 2026-05-30 - React Rules of Hooks with early returns
+**Learning:** Wrapped an array sort computation in `useMemo` and placed it after a `tasks.length === 0` early return check, which violated the React rules of hooks (hooks cannot be called conditionally).
+**Action:** When applying React hooks like `useMemo` for performance optimizations, ensure they are placed before any conditional early returns (e.g., empty state checks) to prevent violating the React rules of hooks.

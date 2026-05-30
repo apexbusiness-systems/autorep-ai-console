@@ -264,6 +264,16 @@ function LeadsTable({ leads, onSelectLead }: { leads: Lead[]; onSelectLead: (id:
 // ─── Follow-Up Queue ──────────────────────────────────────────────────────────
 
 function FollowUpQueue({ tasks }: { tasks: FollowUpTask[] }) {
+  // ⚡ Bolt Performance Optimization: Memoize sorted queue
+  // Avoids recalculating O(N log N) sort on every render of the component
+  // Expected impact: Speeds up rendering when task lists are large
+  const sorted = useMemo(() => {
+    return [...tasks].sort((a, b) => {
+      const statusOrder: Record<string, number> = { overdue: 0, due: 1, scheduled: 2, completed: 3, cancelled: 4, suppressed: 5 };
+      return (statusOrder[a.status] ?? 9) - (statusOrder[b.status] ?? 9);
+    });
+  }, [tasks]);
+
   if (tasks.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
@@ -272,11 +282,6 @@ function FollowUpQueue({ tasks }: { tasks: FollowUpTask[] }) {
       </div>
     );
   }
-
-  const sorted = [...tasks].sort((a, b) => {
-    const statusOrder = { overdue: 0, due: 1, scheduled: 2, completed: 3, cancelled: 4, suppressed: 5 };
-    return (statusOrder[a.status] ?? 9) - (statusOrder[b.status] ?? 9);
-  });
 
   return (
     <div className="space-y-2">
