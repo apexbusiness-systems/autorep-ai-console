@@ -42,3 +42,6 @@
 ## 2026-05-30 - React Rules of Hooks with early returns
 **Learning:** Wrapped an array sort computation in `useMemo` and placed it after a `tasks.length === 0` early return check, which violated the React rules of hooks (hooks cannot be called conditionally).
 **Action:** When applying React hooks like `useMemo` for performance optimizations, ensure they are placed before any conditional early returns (e.g., empty state checks) to prevent violating the React rules of hooks.
+## 2026-06-03 - Combine chained .filter() operations into a single pass
+**Learning:** Found multiple chained `.filter()` calls on large lists in `src/services/inventory-search.ts` (`getDemoListings`). This pattern forces multiple O(N) array traversals and allocates intermediate arrays for each filter step, which is inefficient.
+**Action:** When applying multiple filtering criteria to a list, combine them into a single `.filter()` pass containing all conditional checks instead of chained `.filter()` calls. Additionally, extract loop-invariant logic (like `.toLowerCase()` on search terms) outside the loop to prevent repeated string allocations.
