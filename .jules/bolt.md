@@ -42,3 +42,6 @@
 ## 2026-05-30 - React Rules of Hooks with early returns
 **Learning:** Wrapped an array sort computation in `useMemo` and placed it after a `tasks.length === 0` early return check, which violated the React rules of hooks (hooks cannot be called conditionally).
 **Action:** When applying React hooks like `useMemo` for performance optimizations, ensure they are placed before any conditional early returns (e.g., empty state checks) to prevent violating the React rules of hooks.
+## 2026-06-16 - Extracted arrays from inside loop checks to module-level Sets
+**Learning:** Found instances where arrays were defined inline within `.filter()` callbacks or `for` loops (e.g., `['active', 'pending'].includes(status)`). This causes a new array to be allocated on every iteration, leading to O(N * M) allocations and slower lookup times.
+**Action:** For membership checks within loops, always prefer extracting the options into a static `Set` at the module level and using `Set.has()` to avoid redundant array allocations and achieve O(1) lookup complexity.
