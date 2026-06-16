@@ -12,6 +12,11 @@ import {
 import { useFinancePackets, useAuditEvents, useLeads } from "@/hooks/use-store";
 import type { FinancePacket, SupportingDocument } from "@/types/domain";
 
+// ⚡ Bolt Performance Optimization: Set.has() over Array.includes()
+// Extracted array creation from inside the filter loop and converted to a Set for O(1) lookups
+// Expected impact: Eliminates O(N) redundant array allocations per render and speeds up audit event filtering.
+const FINANCE_AUDIT_ACTIONS = new Set(['consent_captured', 'disclosure_sent', 'finance_submitted', 'document_received', 'packet_routed']);
+
 const FinancePage = () => {
   const packets = useFinancePackets();
   const auditEvents = useAuditEvents();
@@ -19,7 +24,7 @@ const FinancePage = () => {
   const [expandedPacket, setExpandedPacket] = useState<string | null>(null);
 
   const financeAudits = useMemo(() =>
-    auditEvents.filter(e => ['consent_captured', 'disclosure_sent', 'finance_submitted', 'document_received', 'packet_routed'].includes(e.action)),
+    auditEvents.filter(e => FINANCE_AUDIT_ACTIONS.has(e.action)),
   [auditEvents]);
 
   // ⚡ Bolt Performance Optimization: Single-pass array reduction
