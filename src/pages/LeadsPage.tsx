@@ -611,7 +611,7 @@ const LeadsPage = () => {
       if (t.status !== "completed" && t.status !== "cancelled") {
         active.push(t);
         if (t.type === "reactivation") reactivation.push(t);
-        if (["callback", "quote_follow_up", "appointment_reminder"].includes(t.type)) {
+        if (PROACTIVE_TASK_TYPES.has(t.type)) {
           proactive.push(t);
         }
       }
