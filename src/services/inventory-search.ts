@@ -177,14 +177,26 @@ class MarketCheckService {
       { id: 'mc-demo-6', source: 'marketcheck', vin: '5YJ3E1EA1PF567890', year: 2024, make: 'Chevrolet', model: 'Equinox', trim: 'RS AWD', body: 'SUV', mileage: 3200, price: 36800, condition: 'used', exteriorColor: 'Sterling Grey', fuelType: 'Gasoline', transmission: 'Automatic', drivetrain: 'AWD', dealerName: 'Valley Chevrolet', dealerCity: 'Hamilton', dealerProvince: 'ON', distance: 35, daysOnMarket: 18, features: ['RS Sport Package', 'Bose Audio', 'Panoramic Sunroof'] },
     ];
 
-    let result = listings;
-    if (filters.make) result = result.filter(l => l.make.toLowerCase() === filters.make!.toLowerCase());
-    if (filters.model) result = result.filter(l => l.model.toLowerCase().includes(filters.model!.toLowerCase()));
-    if (filters.priceMax) result = result.filter(l => l.price <= filters.priceMax!);
-    if (filters.priceMin) result = result.filter(l => l.price >= filters.priceMin!);
-    if (filters.bodyType) result = result.filter(l => l.body.toLowerCase() === filters.bodyType!.toLowerCase());
-    if (filters.condition && filters.condition !== 'all') result = result.filter(l => l.condition === filters.condition);
-    return result;
+    // ⚡ Bolt Performance Optimization: Single-pass array filtering with loop-invariant extraction
+    // Replaced multiple chained `.filter()` calls with a single pass.
+    // Extracted `.toLowerCase()` and conditional checks outside the callback to prevent O(N) allocation overhead.
+    // Expected impact: Reduces CPU cycles and memory allocations when filtering lists.
+    const fMake = filters.make?.toLowerCase();
+    const fModel = filters.model?.toLowerCase();
+    const fMax = filters.priceMax;
+    const fMin = filters.priceMin;
+    const fBody = filters.bodyType?.toLowerCase();
+    const fCondition = filters.condition && filters.condition !== 'all' ? filters.condition : undefined;
+
+    return listings.filter(l => {
+      if (fMake && l.make.toLowerCase() !== fMake) return false;
+      if (fModel && !l.model.toLowerCase().includes(fModel)) return false;
+      if (fMax !== undefined && l.price > fMax) return false;
+      if (fMin !== undefined && l.price < fMin) return false;
+      if (fBody && l.body.toLowerCase() !== fBody) return false;
+      if (fCondition && l.condition !== fCondition) return false;
+      return true;
+    });
   }
 }
 
