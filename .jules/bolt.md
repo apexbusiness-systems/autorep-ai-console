@@ -42,3 +42,7 @@
 ## 2026-05-30 - React Rules of Hooks with early returns
 **Learning:** Wrapped an array sort computation in `useMemo` and placed it after a `tasks.length === 0` early return check, which violated the React rules of hooks (hooks cannot be called conditionally).
 **Action:** When applying React hooks like `useMemo` for performance optimizations, ensure they are placed before any conditional early returns (e.g., empty state checks) to prevent violating the React rules of hooks.
+
+## 2025-07-28 - Extracted invariant calculations from array loops (Strings)
+**Learning:** Discovered an array `.filter()` mapping operation repeatedly converting filter values via `.toLowerCase()` strings for every item iteration in `src/services/inventory-search.ts`, which adds significant O(N) processing and memory overhead by constantly allocating temporary strings.
+**Action:** Extract repeated string operations (like `string.toLowerCase()`) or repeated condition evaluations completely out of the loop whenever they are derived from static inputs, like function parameters, rather than row data.
