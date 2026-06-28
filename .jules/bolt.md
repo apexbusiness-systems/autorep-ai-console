@@ -42,3 +42,6 @@
 ## 2026-05-30 - React Rules of Hooks with early returns
 **Learning:** Wrapped an array sort computation in `useMemo` and placed it after a `tasks.length === 0` early return check, which violated the React rules of hooks (hooks cannot be called conditionally).
 **Action:** When applying React hooks like `useMemo` for performance optimizations, ensure they are placed before any conditional early returns (e.g., empty state checks) to prevent violating the React rules of hooks.
+## 2026-06-03 - Replaced inline array inclusion checks with static Sets
+**Learning:** Found multiple instances where `Array.includes()` was used inside array reduction loops (like `.filter()` or `for` loops) with a literal array (e.g. `['consent_captured', ...].includes(e.action)`). This forces an O(N) lookup inside an O(N) traversal and creates redundant array allocations on every render.
+**Action:** When filtering or checking membership against a static list of strings or enum values inside a loop or `.filter()` callback, define a `new Set([...])` outside the function/component and use `Set.has()` instead. This achieves O(1) lookup complexity and prevents redundant memory allocation.
