@@ -11,7 +11,7 @@ import {
   ArrowLeftRight, ChevronRight, Link2, Calculator,
   CheckCircle, X, FileText,
 } from "lucide-react";
-import { useVehicles, useQuotes, useLeads } from "@/hooks/use-store";
+import { useVehicles, useQuotes, useStore } from "@/hooks/use-store";
 import { calculateQuoteTotals, type QuotePackageAddon } from "@/services/pricingService";
 
 const PACKAGE_OPTIONS: QuotePackageAddon[] = [
@@ -23,7 +23,19 @@ const PACKAGE_OPTIONS: QuotePackageAddon[] = [
 const VehiclesPage = () => {
   const vehicles = useVehicles();
   const quotes = useQuotes();
-  const leads = useLeads();
+
+  // ⚡ Bolt Performance Optimization: Zustand Selector with Map Lookup
+  // Replaced `useLeads()` with base store selection to avoid triggering expensive
+  // derived list calculations on unrelated state updates. Pre-computing a Map
+  // reduces O(N*M) lookups in the render loop to O(N).
+  const leads = useStore(s => s.leads);
+  const leadNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (let i = 0; i < leads.length; i++) {
+      map.set(leads[i].id, leads[i].name);
+    }
+    return map;
+  }, [leads]);
   const [searchQuery, setSearchQuery] = useState('');
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const [bodyFilter, setBodyFilter] = useState('All');
@@ -325,11 +337,11 @@ const VehiclesPage = () => {
                 </thead>
                 <tbody>
                   {quotes.map((q) => {
-                    const lead = leads.find(l => l.id === q.leadId);
+                    const leadName = leadNameMap.get(q.leadId) || '—';
                     return (
                       <tr key={q.id} className="border-b border-border hover:bg-secondary/20 transition-colors">
                         <td className="px-4 py-3 text-sm font-medium text-gold">{q.quoteNumber}</td>
-                        <td className="px-4 py-3 text-sm text-foreground">{lead?.name || '—'}</td>
+                        <td className="px-4 py-3 text-sm text-foreground">{leadName}</td>
                         <td className="px-4 py-3 text-xs text-muted-foreground">{q.scenarios.map(s => s.vehicleSummary).join(' vs ')}</td>
                         <td className="px-4 py-3 text-xs text-muted-foreground">{new Date(q.createdAt).toLocaleDateString()}</td>
                         <td className="px-4 py-3 text-xs text-muted-foreground flex items-center gap-1"><History className="w-3 h-3" /> v{q.revision}</td>

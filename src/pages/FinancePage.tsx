@@ -9,13 +9,25 @@ import {
   Lock, Shield, Eye, ChevronRight, Upload, FileCheck,
   ChevronDown, RefreshCw, XCircle, Package,
 } from "lucide-react";
-import { useFinancePackets, useAuditEvents, useLeads } from "@/hooks/use-store";
+import { useFinancePackets, useAuditEvents, useStore } from "@/hooks/use-store";
 import type { FinancePacket, SupportingDocument } from "@/types/domain";
 
 const FinancePage = () => {
   const packets = useFinancePackets();
   const auditEvents = useAuditEvents();
-  const leads = useLeads();
+
+  // ⚡ Bolt Performance Optimization: Zustand Selector with Map Lookup
+  // Replaced `useLeads()` with base store selection to avoid triggering expensive
+  // derived list calculations on unrelated state updates. Pre-computing a Map
+  // reduces O(N*M) lookups in the render loop to O(N).
+  const leads = useStore(s => s.leads);
+  const leadNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (let i = 0; i < leads.length; i++) {
+      map.set(leads[i].id, leads[i].name);
+    }
+    return map;
+  }, [leads]);
   const [expandedPacket, setExpandedPacket] = useState<string | null>(null);
 
   const financeAudits = useMemo(() =>
@@ -42,7 +54,7 @@ const FinancePage = () => {
     return { active, awaitingConsent, ready, submitted };
   }, [packets]);
 
-  const getLeadName = (leadId: string) => leads.find(l => l.id === leadId)?.name || 'Unknown';
+  const getLeadName = (leadId: string) => leadNameMap.get(leadId) || 'Unknown';
 
   return (
     <AppLayout>
