@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import {
   useConversations, useMessages, useVehicles, useStore,
-  setActiveConversation, addMessage, useLeads, useQuotes,
+  setActiveConversation, addMessage, useQuotes,
 } from "@/hooks/use-store";
 import type { Message, Channel } from "@/types/domain";
 
@@ -48,7 +48,6 @@ const LiveAgentConsole = () => {
   const activeConvId = useStore(s => s.activeConversationId);
   const messages = useMessages(activeConvId);
   const vehicles = useVehicles();
-  const leads = useLeads();
   const quotes = useQuotes();
   const [inputValue, setInputValue] = useState('');
   const [channelFilter, setChannelFilter] = useState<string>('all');
@@ -62,9 +61,14 @@ const LiveAgentConsole = () => {
     conversations.find(c => c.id === activeConvId) || null,
   [conversations, activeConvId]);
 
-  const activeLead = useMemo(() =>
-    activeConv ? leads.find(l => l.id === activeConv.leadId) : null,
-  [activeConv, leads]);
+  // ⚡ Bolt Performance Optimization: Base Store Selector
+  // Avoids calling `useLeads()` which performs an expensive derivation of the entire
+  // leads array. By selecting the active lead directly from the base state, we prevent
+  // constant O(N) recalculations and component re-renders when other state changes.
+  const activeLead = useStore(s => {
+    if (!activeConv?.leadId) return null;
+    return s.leads.find(l => l.id === activeConv.leadId) || null;
+  });
 
   const activeQuotes = useMemo(() =>
     activeLead ? quotes.filter(q => q.leadId === activeLead.id) : [],
