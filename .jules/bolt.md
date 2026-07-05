@@ -42,3 +42,6 @@
 ## 2026-05-30 - React Rules of Hooks with early returns
 **Learning:** Wrapped an array sort computation in `useMemo` and placed it after a `tasks.length === 0` early return check, which violated the React rules of hooks (hooks cannot be called conditionally).
 **Action:** When applying React hooks like `useMemo` for performance optimizations, ensure they are placed before any conditional early returns (e.g., empty state checks) to prevent violating the React rules of hooks.
+## 2026-06-05 - Avoid new Date() inside sort loops
+**Learning:** Found an instance in `ConversationsPage` where sorting an array of objects by their `lastMessageAt` timestamp was instantiating `new Date(string).getTime()` on every loop iteration. Because `.sort()` runs O(N log N) times, this caused significant allocation and parsing overhead.
+**Action:** When sorting by ISO 8601 date strings, replace `new Date(str)` with simple lexicographical string comparison operators (`>`, `<`). This guarantees the same order without creating expensive intermediate objects.
