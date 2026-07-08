@@ -42,3 +42,6 @@
 ## 2026-05-30 - React Rules of Hooks with early returns
 **Learning:** Wrapped an array sort computation in `useMemo` and placed it after a `tasks.length === 0` early return check, which violated the React rules of hooks (hooks cannot be called conditionally).
 **Action:** When applying React hooks like `useMemo` for performance optimizations, ensure they are placed before any conditional early returns (e.g., empty state checks) to prevent violating the React rules of hooks.
+## 2024-07-08 - [ISO Date Sorting Optimization]
+**Learning:** Using `new Date(dateString).getTime()` inside `Array.prototype.sort()` for ISO 8601 strings causes significant O(N log N) overhead due to memory allocation and date parsing. Because ISO 8601 format guarantees chronological ordering matches lexicographical ordering, direct string comparison is a much faster, zero-allocation alternative.
+**Action:** When sorting arrays by date strings (e.g., ISO 8601 format like `lastMessageAt`), use lexicographical string comparison operators (`>`, `<`) instead of `new Date(dateString).getTime()` to avoid expensive O(N log N) Date allocations and parsing overhead.
