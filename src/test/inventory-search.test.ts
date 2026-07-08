@@ -83,12 +83,12 @@ describe("Inventory Search Service", () => {
       expect(result).toHaveProperty("vin");
       expect(result).toHaveProperty("valid");
       expect(typeof result.vin).toBe("string");
-    });
+    }, 15000);
 
     it("handles invalid VIN gracefully", async () => {
       const result = await inventorySearch.decodeVIN("INVALID");
       // NHTSA will still respond, just with error data
       expect(result).toHaveProperty("vin");
-    });
+    }, 15000);
   });
 });
