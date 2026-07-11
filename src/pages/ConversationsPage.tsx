@@ -776,11 +776,13 @@ const ConversationsPage = () => {
     });
 
     // Sort by last message time, most recent first
-    return filtered.sort(
-      (a, b) =>
-        new Date(b.lastMessageAt).getTime() -
-        new Date(a.lastMessageAt).getTime()
-    );
+    // ⚡ Bolt Performance Optimization: Lexicographical sort for ISO date strings
+    // Avoids expensive O(N log N) Date object allocations by comparing string values directly
+    return filtered.sort((a, b) => {
+      if (b.lastMessageAt > a.lastMessageAt) return 1;
+      if (b.lastMessageAt < a.lastMessageAt) return -1;
+      return 0;
+    });
   }, [conversations, channelFilter, deferredSearchQuery]);
 
   function handleSelectConversation(id: string) {
