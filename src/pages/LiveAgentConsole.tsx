@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import {
   useConversations, useMessages, useVehicles, useStore,
-  setActiveConversation, addMessage, useLeads, useQuotes,
+  setActiveConversation, addMessage, useQuotes,
 } from "@/hooks/use-store";
 import type { Message, Channel } from "@/types/domain";
 
@@ -48,7 +48,6 @@ const LiveAgentConsole = () => {
   const activeConvId = useStore(s => s.activeConversationId);
   const messages = useMessages(activeConvId);
   const vehicles = useVehicles();
-  const leads = useLeads();
   const quotes = useQuotes();
   const [inputValue, setInputValue] = useState('');
   const [channelFilter, setChannelFilter] = useState<string>('all');
@@ -62,9 +61,10 @@ const LiveAgentConsole = () => {
     conversations.find(c => c.id === activeConvId) || null,
   [conversations, activeConvId]);
 
-  const activeLead = useMemo(() =>
-    activeConv ? leads.find(l => l.id === activeConv.leadId) : null,
-  [activeConv, leads]);
+  // ⚡ Bolt Performance Optimization: Direct store lookup for active lead
+  // Bypasses the expensive O(N*M) `useLeads` hook which recalculates scores for all leads
+  // on any message/conversation change. We only need the active lead's basic info here.
+  const activeLead = useStore(s => activeConv ? s.leads.find(l => l.id === activeConv.leadId) || null : null);
 
   const activeQuotes = useMemo(() =>
     activeLead ? quotes.filter(q => q.leadId === activeLead.id) : [],
