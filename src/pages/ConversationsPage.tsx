@@ -775,12 +775,11 @@ const ConversationsPage = () => {
       return true;
     });
 
-    // Sort by last message time, most recent first
-    return filtered.sort(
-      (a, b) =>
-        new Date(b.lastMessageAt).getTime() -
-        new Date(a.lastMessageAt).getTime()
-    );
+    // ⚡ Bolt Performance Optimization: Lexicographical string comparison
+    // Replaced `new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()`
+    // with string comparison to avoid expensive O(N log N) Date allocations and parsing overhead.
+    // Expected impact: Faster sorting of conversation lists, especially on large arrays.
+    return filtered.sort((a, b) => (b.lastMessageAt > a.lastMessageAt ? 1 : b.lastMessageAt < a.lastMessageAt ? -1 : 0));
   }, [conversations, channelFilter, deferredSearchQuery]);
 
   function handleSelectConversation(id: string) {
