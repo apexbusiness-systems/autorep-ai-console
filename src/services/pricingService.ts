@@ -266,7 +266,17 @@ export function suggestDynamicPrice(input: DynamicPriceInput): DynamicPriceSugge
   const basePrice = Math.max(0, safeNumber(input.basePrice));
   const demand = forecastDemand(input);
   const daysOnLot = safeNumber(input.vehicle?.daysOnLot);
-  const inventoryPressure = (input.vehicles ?? []).filter(vehicle => vehicle.status === 'available').length;
+
+  // ⚡ Bolt Performance Optimization: Replaced .filter().length with a loop to prevent intermediate array allocation overhead.
+  let inventoryPressure = 0;
+  if (input.vehicles) {
+    for (const vehicle of input.vehicles) {
+      if (vehicle.status === 'available') {
+        inventoryPressure++;
+      }
+    }
+  }
+
   let multiplier = 1;
 
   if (demand.band === 'high') multiplier += 0.025;
