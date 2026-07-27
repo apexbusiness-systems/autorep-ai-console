@@ -45,3 +45,6 @@
 ## 2026-05-12 - Date Sorting Performance
 **Learning:** Found that `filtered.sort()` in `src/pages/ConversationsPage.tsx` was doing `new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()`, which forces expensive Date allocations and parsing on every iteration (O(N log N) overhead) for large data structures like ISO 8601 strings.
 **Action:** Always use string lexicographical comparison (`<` and `>`) when sorting standardized timestamp date formats like ISO 8601 to achieve faster sorting and eliminate parsing overhead.
+## 2026-07-27 - Bypassing heavy derived Zustand selectors for basic lookups
+**Learning:** Using `useLeads()` in components like `CommandPalette.tsx`, `FinancePage.tsx`, `VehiclesPage.tsx`, and `AppSidebar.tsx` when only basic fields like `id`, `name`, or `priority` are needed causes massive unnecessary O(N*M) recalculations. Because `useLeads()` maps over leads, calculates scores based on messages and conversations, and returns new object references, any new message triggers re-renders across the entire app layout.
+**Action:** When you only need basic, un-derived fields from an entity in the Zustand store, directly use `useStore(s => s.entity)` instead of the heavy derived selector. If you need to perform lookups within a loop based on this data, construct a `Map` wrapped in a `useMemo` for O(1) performance.

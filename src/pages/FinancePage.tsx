@@ -9,13 +9,13 @@ import {
   Lock, Shield, Eye, ChevronRight, Upload, FileCheck,
   ChevronDown, RefreshCw, XCircle, Package,
 } from "lucide-react";
-import { useFinancePackets, useAuditEvents, useLeads } from "@/hooks/use-store";
+import { useFinancePackets, useAuditEvents, useStore } from "@/hooks/use-store";
 import type { FinancePacket, SupportingDocument } from "@/types/domain";
 
 const FinancePage = () => {
   const packets = useFinancePackets();
   const auditEvents = useAuditEvents();
-  const leads = useLeads();
+  const leads = useStore(s => s.leads);
   const [expandedPacket, setExpandedPacket] = useState<string | null>(null);
 
   const financeAudits = useMemo(() =>
@@ -42,7 +42,15 @@ const FinancePage = () => {
     return { active, awaitingConsent, ready, submitted };
   }, [packets]);
 
-  const getLeadName = (leadId: string) => leads.find(l => l.id === leadId)?.name || 'Unknown';
+  const leadNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (let i = 0; i < leads.length; i++) {
+      map.set(leads[i].id, leads[i].name);
+    }
+    return map;
+  }, [leads]);
+
+  const getLeadName = (leadId: string) => leadNameMap.get(leadId) || 'Unknown';
 
   return (
     <AppLayout>
