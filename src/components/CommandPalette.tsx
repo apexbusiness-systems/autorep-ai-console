@@ -18,12 +18,12 @@ import {
   Shield,
   Settings,
 } from "lucide-react";
-import { useLeads, useVehicles } from "@/hooks/use-store";
+import { useVehicles, useStore } from "@/hooks/use-store";
 
 export function CommandPalette() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
-  const leads = useLeads();
+  const leads = useStore(s => s.leads);
   const vehicles = useVehicles();
 
   useEffect(() => {
