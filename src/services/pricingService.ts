@@ -227,9 +227,28 @@ export function calculateQuoteTotals(input: QuoteCalculationInput): QuoteCalcula
   const tradeInValue = Math.max(0, safeNumber(input.tradeInValue));
   const taxRate = clamp(safeNumber(input.taxRate, 0.13), 0, 0.25);
   const fees = Math.max(0, safeNumber(input.fees, 499));
-  const packages = (input.packages ?? []).filter(pkg => pkg && safeNumber(pkg.price) > 0);
-  const packageTotal = packages.reduce((sum, pkg) => sum + safeNumber(pkg.price), 0);
-  const taxablePackageTotal = packages.reduce((sum, pkg) => sum + (pkg.taxable === false ? 0 : safeNumber(pkg.price)), 0);
+
+  // ⚡ Bolt Performance Optimization: Single-pass array reduction instead of chained methods
+  // Replaced .filter() followed by two .reduce() calls with a single loop to
+  // simultaneously filter valid packages and compute totals in one O(N) pass,
+  // reducing array allocations and traversals.
+  const packages: QuotePackageAddon[] = [];
+  let packageTotal = 0;
+  let taxablePackageTotal = 0;
+
+  if (input.packages) {
+    for (const pkg of input.packages) {
+      if (pkg && safeNumber(pkg.price) > 0) {
+        packages.push(pkg);
+        const price = safeNumber(pkg.price);
+        packageTotal += price;
+        if (pkg.taxable !== false) {
+          taxablePackageTotal += price;
+        }
+      }
+    }
+  }
+
   const principal = Math.max(0, sellingPrice - downPayment - tradeInValue);
   const taxableSubtotal = Math.max(0, principal + taxablePackageTotal);
   const taxes = Math.round(taxableSubtotal * taxRate * 100) / 100;
@@ -266,7 +285,18 @@ export function suggestDynamicPrice(input: DynamicPriceInput): DynamicPriceSugge
   const basePrice = Math.max(0, safeNumber(input.basePrice));
   const demand = forecastDemand(input);
   const daysOnLot = safeNumber(input.vehicle?.daysOnLot);
-  const inventoryPressure = (input.vehicles ?? []).filter(vehicle => vehicle.status === 'available').length;
+
+  // ⚡ Bolt Performance Optimization: Single-pass early-count
+  // Replaced .filter(...).length with a single loop to avoid intermediate array allocation
+  let inventoryPressure = 0;
+  if (input.vehicles) {
+    for (const vehicle of input.vehicles) {
+      if (vehicle.status === 'available') {
+        inventoryPressure++;
+      }
+    }
+  }
+
   let multiplier = 1;
 
   if (demand.band === 'high') multiplier += 0.025;
