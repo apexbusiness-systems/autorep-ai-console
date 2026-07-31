@@ -94,6 +94,10 @@ function quoteMatchesVehicle(quote: Quote, vehicle?: Vehicle | null): boolean {
   return quote.vehicleIds.includes(vehicle.id) || quote.scenarios.some(s => s.vehicleId === vehicle.id || s.vehicleSummary.toLowerCase().includes(vehicle.model.toLowerCase()));
 }
 
+const HOT_LEAD_STAGES = new Set(['quote_sent', 'appointment_set', 'finance_intake', 'negotiation']);
+const ACTIVE_QUOTE_STATUSES = new Set(['sent', 'viewed', 'accepted', 'revised']);
+const ACTIVE_CONVO_STATUSES = new Set(['active', 'pending', 'escalated']);
+
 export function forecastDemand(input: ForecastDemandInput): DemandForecast {
   const now = input.now ?? new Date();
   const leads = input.leads ?? [];
@@ -118,7 +122,8 @@ export function forecastDemand(input: ForecastDemandInput): DemandForecast {
       if (daysBetween(now, lead.lastActivityAt) <= 14) {
         recentLeadsCount++;
       }
-      if (lead.priority === 'hot' || ['quote_sent', 'appointment_set', 'finance_intake', 'negotiation'].includes(lead.stage)) {
+      // ⚡ Bolt Performance Optimization: Replace Array.includes with Set.has
+      if (lead.priority === 'hot' || HOT_LEAD_STAGES.has(lead.stage)) {
         hotLeadsCount++;
       }
     }
@@ -129,7 +134,8 @@ export function forecastDemand(input: ForecastDemandInput): DemandForecast {
   for (const quote of quotes) {
     if (quoteMatchesVehicle(quote, vehicle)) {
       matchingQuotesCount++;
-      if (['sent', 'viewed', 'accepted', 'revised'].includes(quote.status)) {
+      // ⚡ Bolt Performance Optimization: Replace Array.includes with Set.has
+      if (ACTIVE_QUOTE_STATUSES.has(quote.status)) {
         activeQuotesCount++;
       }
     }
@@ -142,7 +148,8 @@ export function forecastDemand(input: ForecastDemandInput): DemandForecast {
     if (matchingLeadIds.has(convo.leadId)) {
       relevantConversationsCount++;
       relevantConversationIds.add(convo.id);
-      if (['active', 'pending', 'escalated'].includes(convo.status)) {
+      // ⚡ Bolt Performance Optimization: Replace Array.includes with Set.has
+      if (ACTIVE_CONVO_STATUSES.has(convo.status)) {
         activeConversationsCount++;
       }
     }
