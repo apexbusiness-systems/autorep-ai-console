@@ -12,14 +12,18 @@ import {
 import { useFinancePackets, useAuditEvents, useLeads } from "@/hooks/use-store";
 import type { FinancePacket, SupportingDocument } from "@/types/domain";
 
+const AUDIT_ACTION_TYPES = new Set(['consent_captured', 'disclosure_sent', 'finance_submitted', 'document_received', 'packet_routed']);
+
 const FinancePage = () => {
   const packets = useFinancePackets();
   const auditEvents = useAuditEvents();
   const leads = useLeads();
   const [expandedPacket, setExpandedPacket] = useState<string | null>(null);
 
+  // ⚡ Bolt Performance Optimization: Replace Array.includes with Set.has
+  // Prevents redundant array allocation and reduces lookup from O(M) to O(1) inside loop
   const financeAudits = useMemo(() =>
-    auditEvents.filter(e => ['consent_captured', 'disclosure_sent', 'finance_submitted', 'document_received', 'packet_routed'].includes(e.action)),
+    auditEvents.filter(e => AUDIT_ACTION_TYPES.has(e.action)),
   [auditEvents]);
 
   // ⚡ Bolt Performance Optimization: Single-pass array reduction
