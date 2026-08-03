@@ -163,7 +163,7 @@ export function useStore<T>(selector: (s: StoreState) => T): T {
   );
 }
 
-function summarizeConversation(conversation: Conversation, messages: Message[]): string {
+export function summarizeConversation(conversation: Conversation, messages: Message[]): string {
   if (conversation.summary) return conversation.summary;
 
   // ⚡ Bolt Performance Optimization: Single-pass backward loop for top-K selection

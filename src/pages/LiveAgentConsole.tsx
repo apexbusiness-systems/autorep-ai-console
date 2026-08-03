@@ -14,6 +14,7 @@ import {
 import {
   useConversations, useMessages, useVehicles, useStore,
   setActiveConversation, addMessage, useQuotes,
+  summarizeConversation,
 } from "@/hooks/use-store";
 import type { Message, Channel } from "@/types/domain";
 
@@ -57,9 +58,19 @@ const LiveAgentConsole = () => {
   const [isCompactLayout, setIsCompactLayout] = useState(false);
   const autoReplyTimeout = useRef<number | null>(null);
 
-  const activeConv = useMemo(() =>
-    conversations.find(c => c.id === activeConvId) || null,
-  [conversations, activeConvId]);
+  // ⚡ Bolt Performance Optimization: Direct store lookup for active conversation
+  // Avoid deriving active items from mapped/memoized arrays to prevent re-renders when other conversations update
+  const activeConvBase = useStore(s => activeConvId ? s.conversations.find(c => c.id === activeConvId) || null : null);
+
+  const activeConv = useMemo(() => {
+    if (!activeConvBase) return null;
+    const restricted = activeConvBase.restricted || activeConvBase.status === 'restricted' || activeConvBase.optedOut || activeConvBase.suppressionActive;
+    return {
+      ...activeConvBase,
+      restricted,
+      summary: summarizeConversation(activeConvBase, messages),
+    };
+  }, [activeConvBase, messages]);
 
   // ⚡ Bolt Performance Optimization: Direct store lookup for active lead
   // Bypasses the expensive O(N*M) `useLeads` hook which recalculates scores for all leads
