@@ -227,9 +227,29 @@ export function calculateQuoteTotals(input: QuoteCalculationInput): QuoteCalcula
   const tradeInValue = Math.max(0, safeNumber(input.tradeInValue));
   const taxRate = clamp(safeNumber(input.taxRate, 0.13), 0, 0.25);
   const fees = Math.max(0, safeNumber(input.fees, 499));
-  const packages = (input.packages ?? []).filter(pkg => pkg && safeNumber(pkg.price) > 0);
-  const packageTotal = packages.reduce((sum, pkg) => sum + safeNumber(pkg.price), 0);
-  const taxablePackageTotal = packages.reduce((sum, pkg) => sum + (pkg.taxable === false ? 0 : safeNumber(pkg.price)), 0);
+
+  // ⚡ Bolt Performance Optimization: Single-pass array reduction
+  // Why: Replaced multiple chained .filter() and .reduce() calls with a single O(N) loop.
+  // Impact: Avoids redundant array traversals and intermediate memory allocations.
+  const packages = [];
+  let packageTotal = 0;
+  let taxablePackageTotal = 0;
+
+  if (input.packages) {
+    for (const pkg of input.packages) {
+      if (pkg) {
+        const price = safeNumber(pkg.price);
+        if (price > 0) {
+          packages.push(pkg);
+          packageTotal += price;
+          if (pkg.taxable !== false) {
+            taxablePackageTotal += price;
+          }
+        }
+      }
+    }
+  }
+
   const principal = Math.max(0, sellingPrice - downPayment - tradeInValue);
   const taxableSubtotal = Math.max(0, principal + taxablePackageTotal);
   const taxes = Math.round(taxableSubtotal * taxRate * 100) / 100;
@@ -266,7 +286,19 @@ export function suggestDynamicPrice(input: DynamicPriceInput): DynamicPriceSugge
   const basePrice = Math.max(0, safeNumber(input.basePrice));
   const demand = forecastDemand(input);
   const daysOnLot = safeNumber(input.vehicle?.daysOnLot);
-  const inventoryPressure = (input.vehicles ?? []).filter(vehicle => vehicle.status === 'available').length;
+
+  // ⚡ Bolt Performance Optimization: Single-pass loop for counting
+  // Why: Replaced `.filter().length` with a direct counting loop.
+  // Impact: Prevents the creation of an unnecessary intermediate array just to check its length, saving memory.
+  let inventoryPressure = 0;
+  if (input.vehicles) {
+    for (const vehicle of input.vehicles) {
+      if (vehicle.status === 'available') {
+        inventoryPressure++;
+      }
+    }
+  }
+
   let multiplier = 1;
 
   if (demand.band === 'high') multiplier += 0.025;
