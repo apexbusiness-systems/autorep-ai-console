@@ -228,8 +228,20 @@ export function calculateQuoteTotals(input: QuoteCalculationInput): QuoteCalcula
   const taxRate = clamp(safeNumber(input.taxRate, 0.13), 0, 0.25);
   const fees = Math.max(0, safeNumber(input.fees, 499));
   const packages = (input.packages ?? []).filter(pkg => pkg && safeNumber(pkg.price) > 0);
-  const packageTotal = packages.reduce((sum, pkg) => sum + safeNumber(pkg.price), 0);
-  const taxablePackageTotal = packages.reduce((sum, pkg) => sum + (pkg.taxable === false ? 0 : safeNumber(pkg.price)), 0);
+
+  // ⚡ Bolt: Replaced multiple O(N) array .reduce() operations with a single pass O(N) loop
+  // What: Combine calculating total and taxable package totals into one loop instead of two reduce operations.
+  // Why: Prevents redundant O(N) traversals of the packages array.
+  let packageTotal = 0;
+  let taxablePackageTotal = 0;
+  for (const pkg of packages) {
+    const price = safeNumber(pkg.price);
+    packageTotal += price;
+    if (pkg.taxable !== false) {
+      taxablePackageTotal += price;
+    }
+  }
+
   const principal = Math.max(0, sellingPrice - downPayment - tradeInValue);
   const taxableSubtotal = Math.max(0, principal + taxablePackageTotal);
   const taxes = Math.round(taxableSubtotal * taxRate * 100) / 100;
