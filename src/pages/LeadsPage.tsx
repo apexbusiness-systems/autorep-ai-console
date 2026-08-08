@@ -594,11 +594,22 @@ const LeadsPage = () => {
   const deferredSearchQuery = useDeferredValue(searchQuery);
 
   // Derived counts & filters
-  const hotLeads = useMemo(() => leads.filter((l) => l.priority === "hot"), [leads]);
-  const staleLeads = useMemo(() => leads.filter((l) => l.stage === "stale"), [leads]);
   // ⚡ Bolt Performance Optimization: Single-pass array reduction
   // Replaced multiple O(N) array .filter() operations with a single pass O(N) loop
   // Expected impact: Reduces CPU cycles and memory allocations when processing large lists
+  const { hotLeads, staleLeads } = useMemo(() => {
+    const hot: typeof leads = [];
+    const stale: typeof leads = [];
+
+    for (let i = 0; i < leads.length; i++) {
+      const l = leads[i];
+      if (l.priority === "hot") hot.push(l);
+      if (l.stage === "stale") stale.push(l);
+    }
+
+    return { hotLeads: hot, staleLeads: stale };
+  }, [leads]);
+
   const { followUpsDue, activeTasks, reactivationTasks, proactiveTasks } = useMemo(() => {
     const due: typeof followUpTasks = [];
     const active: typeof followUpTasks = [];
