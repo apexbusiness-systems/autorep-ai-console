@@ -11,7 +11,7 @@ import {
   ArrowLeftRight, ChevronRight, Link2, Calculator,
   CheckCircle, X, FileText,
 } from "lucide-react";
-import { useVehicles, useQuotes, useLeads } from "@/hooks/use-store";
+import { useVehicles, useQuotes, useStore } from "@/hooks/use-store";
 import { calculateQuoteTotals, type QuotePackageAddon } from "@/services/pricingService";
 
 const PACKAGE_OPTIONS: QuotePackageAddon[] = [
@@ -23,7 +23,7 @@ const PACKAGE_OPTIONS: QuotePackageAddon[] = [
 const VehiclesPage = () => {
   const vehicles = useVehicles();
   const quotes = useQuotes();
-  const leads = useLeads();
+  const leads = useStore(s => s.leads);
   const [searchQuery, setSearchQuery] = useState('');
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const [bodyFilter, setBodyFilter] = useState('All');
