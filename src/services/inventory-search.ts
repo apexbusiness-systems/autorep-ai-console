@@ -177,14 +177,21 @@ class MarketCheckService {
       { id: 'mc-demo-6', source: 'marketcheck', vin: '5YJ3E1EA1PF567890', year: 2024, make: 'Chevrolet', model: 'Equinox', trim: 'RS AWD', body: 'SUV', mileage: 3200, price: 36800, condition: 'used', exteriorColor: 'Sterling Grey', fuelType: 'Gasoline', transmission: 'Automatic', drivetrain: 'AWD', dealerName: 'Valley Chevrolet', dealerCity: 'Hamilton', dealerProvince: 'ON', distance: 35, daysOnMarket: 18, features: ['RS Sport Package', 'Bose Audio', 'Panoramic Sunroof'] },
     ];
 
-    let result = listings;
-    if (filters.make) result = result.filter(l => l.make.toLowerCase() === filters.make!.toLowerCase());
-    if (filters.model) result = result.filter(l => l.model.toLowerCase().includes(filters.model!.toLowerCase()));
-    if (filters.priceMax) result = result.filter(l => l.price <= filters.priceMax!);
-    if (filters.priceMin) result = result.filter(l => l.price >= filters.priceMin!);
-    if (filters.bodyType) result = result.filter(l => l.body.toLowerCase() === filters.bodyType!.toLowerCase());
-    if (filters.condition && filters.condition !== 'all') result = result.filter(l => l.condition === filters.condition);
-    return result;
+    // Optimize: Extract loop-invariant string transformations to prevent O(N) allocations and redundant `.toLowerCase()` calls during iteration
+    const targetMake = filters.make?.toLowerCase();
+    const targetModel = filters.model?.toLowerCase();
+    const targetBodyType = filters.bodyType?.toLowerCase();
+
+    // Optimize: Replace multiple O(N) chained `.filter()` operations with a single pass to prevent redundant traversals and intermediate array allocations
+    return listings.filter(l => {
+      if (targetMake && l.make.toLowerCase() !== targetMake) return false;
+      if (targetModel && !l.model.toLowerCase().includes(targetModel)) return false;
+      if (filters.priceMax && l.price > filters.priceMax) return false;
+      if (filters.priceMin && l.price < filters.priceMin) return false;
+      if (targetBodyType && l.body.toLowerCase() !== targetBodyType) return false;
+      if (filters.condition && filters.condition !== 'all' && l.condition !== filters.condition) return false;
+      return true;
+    });
   }
 }
 
