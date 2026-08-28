@@ -177,14 +177,24 @@ class MarketCheckService {
       { id: 'mc-demo-6', source: 'marketcheck', vin: '5YJ3E1EA1PF567890', year: 2024, make: 'Chevrolet', model: 'Equinox', trim: 'RS AWD', body: 'SUV', mileage: 3200, price: 36800, condition: 'used', exteriorColor: 'Sterling Grey', fuelType: 'Gasoline', transmission: 'Automatic', drivetrain: 'AWD', dealerName: 'Valley Chevrolet', dealerCity: 'Hamilton', dealerProvince: 'ON', distance: 35, daysOnMarket: 18, features: ['RS Sport Package', 'Bose Audio', 'Panoramic Sunroof'] },
     ];
 
-    let result = listings;
-    if (filters.make) result = result.filter(l => l.make.toLowerCase() === filters.make!.toLowerCase());
-    if (filters.model) result = result.filter(l => l.model.toLowerCase().includes(filters.model!.toLowerCase()));
-    if (filters.priceMax) result = result.filter(l => l.price <= filters.priceMax!);
-    if (filters.priceMin) result = result.filter(l => l.price >= filters.priceMin!);
-    if (filters.bodyType) result = result.filter(l => l.body.toLowerCase() === filters.bodyType!.toLowerCase());
-    if (filters.condition && filters.condition !== 'all') result = result.filter(l => l.condition === filters.condition);
-    return result;
+    // ⚡ Bolt Performance Optimization: Single-pass array reduction & invariant hoisting
+    // Replaced multiple chained O(N) array .filter() operations with a single pass O(N) loop,
+    // and hoisted loop-invariant string lowercasing outside the iteration.
+    // Expected impact: Reduces CPU cycles, string allocations, and intermediate memory allocations when processing large lists.
+
+    const filterMake = filters.make?.toLowerCase();
+    const filterModel = filters.model?.toLowerCase();
+    const filterBodyType = filters.bodyType?.toLowerCase();
+
+    return listings.filter(l => {
+      if (filterMake && l.make.toLowerCase() !== filterMake) return false;
+      if (filterModel && !l.model.toLowerCase().includes(filterModel)) return false;
+      if (filters.priceMax && l.price > filters.priceMax) return false;
+      if (filters.priceMin && l.price < filters.priceMin) return false;
+      if (filterBodyType && l.body.toLowerCase() !== filterBodyType) return false;
+      if (filters.condition && filters.condition !== 'all' && l.condition !== filters.condition) return false;
+      return true;
+    });
   }
 }
 
