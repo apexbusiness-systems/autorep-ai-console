@@ -9,13 +9,13 @@ import {
   Lock, Shield, Eye, ChevronRight, Upload, FileCheck,
   ChevronDown, RefreshCw, XCircle, Package,
 } from "lucide-react";
-import { useFinancePackets, useAuditEvents, useLeads } from "@/hooks/use-store";
+import { useFinancePackets, useAuditEvents, useStore } from "@/hooks/use-store";
 import type { FinancePacket, SupportingDocument } from "@/types/domain";
 
 const FinancePage = () => {
   const packets = useFinancePackets();
   const auditEvents = useAuditEvents();
-  const leads = useLeads();
+  const leads = useStore(s => s.leads); // ⚡ Bolt Performance Optimization: Direct store lookup avoids O(N*M) calculation
   const [expandedPacket, setExpandedPacket] = useState<string | null>(null);
 
   const financeAudits = useMemo(() =>
