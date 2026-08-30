@@ -227,9 +227,22 @@ export function calculateQuoteTotals(input: QuoteCalculationInput): QuoteCalcula
   const tradeInValue = Math.max(0, safeNumber(input.tradeInValue));
   const taxRate = clamp(safeNumber(input.taxRate, 0.13), 0, 0.25);
   const fees = Math.max(0, safeNumber(input.fees, 499));
-  const packages = (input.packages ?? []).filter(pkg => pkg && safeNumber(pkg.price) > 0);
-  const packageTotal = packages.reduce((sum, pkg) => sum + safeNumber(pkg.price), 0);
-  const taxablePackageTotal = packages.reduce((sum, pkg) => sum + (pkg.taxable === false ? 0 : safeNumber(pkg.price)), 0);
+
+  // ⚡ Bolt Performance Optimization: Single-pass array processing
+  // Replaced chained .filter().reduce() operations with a single-pass loop
+  // Expected impact: Eliminates O(N) traversals and intermediate array allocations
+  const packages: QuotePackageAddon[] = [];
+  let packageTotal = 0;
+  let taxablePackageTotal = 0;
+  for (const pkg of (input.packages ?? [])) {
+    if (pkg && safeNumber(pkg.price) > 0) {
+      packages.push(pkg);
+      const pkgPrice = safeNumber(pkg.price);
+      packageTotal += pkgPrice;
+      if (pkg.taxable !== false) taxablePackageTotal += pkgPrice;
+    }
+  }
+
   const principal = Math.max(0, sellingPrice - downPayment - tradeInValue);
   const taxableSubtotal = Math.max(0, principal + taxablePackageTotal);
   const taxes = Math.round(taxableSubtotal * taxRate * 100) / 100;
@@ -266,7 +279,17 @@ export function suggestDynamicPrice(input: DynamicPriceInput): DynamicPriceSugge
   const basePrice = Math.max(0, safeNumber(input.basePrice));
   const demand = forecastDemand(input);
   const daysOnLot = safeNumber(input.vehicle?.daysOnLot);
-  const inventoryPressure = (input.vehicles ?? []).filter(vehicle => vehicle.status === 'available').length;
+
+  // ⚡ Bolt Performance Optimization: Single-pass array reduction
+  // Replaced .filter().length with a single-pass loop
+  // Expected impact: Eliminates intermediate array allocations
+  let inventoryPressure = 0;
+  for (const vehicle of (input.vehicles ?? [])) {
+    if (vehicle.status === 'available') {
+      inventoryPressure++;
+    }
+  }
+
   let multiplier = 1;
 
   if (demand.band === 'high') multiplier += 0.025;
