@@ -177,14 +177,23 @@ class MarketCheckService {
       { id: 'mc-demo-6', source: 'marketcheck', vin: '5YJ3E1EA1PF567890', year: 2024, make: 'Chevrolet', model: 'Equinox', trim: 'RS AWD', body: 'SUV', mileage: 3200, price: 36800, condition: 'used', exteriorColor: 'Sterling Grey', fuelType: 'Gasoline', transmission: 'Automatic', drivetrain: 'AWD', dealerName: 'Valley Chevrolet', dealerCity: 'Hamilton', dealerProvince: 'ON', distance: 35, daysOnMarket: 18, features: ['RS Sport Package', 'Bose Audio', 'Panoramic Sunroof'] },
     ];
 
-    let result = listings;
-    if (filters.make) result = result.filter(l => l.make.toLowerCase() === filters.make!.toLowerCase());
-    if (filters.model) result = result.filter(l => l.model.toLowerCase().includes(filters.model!.toLowerCase()));
-    if (filters.priceMax) result = result.filter(l => l.price <= filters.priceMax!);
-    if (filters.priceMin) result = result.filter(l => l.price >= filters.priceMin!);
-    if (filters.bodyType) result = result.filter(l => l.body.toLowerCase() === filters.bodyType!.toLowerCase());
-    if (filters.condition && filters.condition !== 'all') result = result.filter(l => l.condition === filters.condition);
-    return result;
+    // ⚡ Bolt Performance Optimization: Single-pass array reduction & invariant extraction
+    // Replaced multiple chained `.filter()` calls causing redundant O(N) traversals
+    // and intermediate allocations. Extracted `toLowerCase()` conversions outside the loop.
+    const makeFilter = filters.make?.toLowerCase();
+    const modelFilter = filters.model?.toLowerCase();
+    const bodyFilter = filters.bodyType?.toLowerCase();
+    const conditionFilter = filters.condition !== 'all' ? filters.condition : undefined;
+
+    return listings.filter(l => {
+      if (makeFilter && l.make.toLowerCase() !== makeFilter) return false;
+      if (modelFilter && !l.model.toLowerCase().includes(modelFilter)) return false;
+      if (filters.priceMax !== undefined && l.price > filters.priceMax) return false;
+      if (filters.priceMin !== undefined && l.price < filters.priceMin) return false;
+      if (bodyFilter && l.body.toLowerCase() !== bodyFilter) return false;
+      if (conditionFilter && l.condition !== conditionFilter) return false;
+      return true;
+    });
   }
 }
 
