@@ -9,13 +9,24 @@ import {
   Lock, Shield, Eye, ChevronRight, Upload, FileCheck,
   ChevronDown, RefreshCw, XCircle, Package,
 } from "lucide-react";
-import { useFinancePackets, useAuditEvents, useLeads } from "@/hooks/use-store";
+import { useFinancePackets, useAuditEvents, useStore } from "@/hooks/use-store";
 import type { FinancePacket, SupportingDocument } from "@/types/domain";
 
 const FinancePage = () => {
   const packets = useFinancePackets();
   const auditEvents = useAuditEvents();
-  const leads = useLeads();
+  const leads = useStore(s => s.leads);
+
+  // ⚡ Bolt Performance Optimization: O(1) lead lookups
+  // Bypasses the expensive O(N*M) useLeads() hook and O(N) array .find() on every row
+  const leadsMap = useMemo(() => {
+    const map = new Map();
+    for (const lead of leads) {
+      map.set(lead.id, lead);
+    }
+    return map;
+  }, [leads]);
+
   const [expandedPacket, setExpandedPacket] = useState<string | null>(null);
 
   const financeAudits = useMemo(() =>
@@ -42,7 +53,7 @@ const FinancePage = () => {
     return { active, awaitingConsent, ready, submitted };
   }, [packets]);
 
-  const getLeadName = (leadId: string) => leads.find(l => l.id === leadId)?.name || 'Unknown';
+  const getLeadName = (leadId: string) => leadsMap.get(leadId)?.name || 'Unknown';
 
   return (
     <AppLayout>
