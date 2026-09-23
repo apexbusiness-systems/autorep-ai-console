@@ -11,7 +11,7 @@ import {
   ArrowLeftRight, ChevronRight, Link2, Calculator,
   CheckCircle, X, FileText,
 } from "lucide-react";
-import { useVehicles, useQuotes, useLeads } from "@/hooks/use-store";
+import { useVehicles, useQuotes, useStore } from "@/hooks/use-store";
 import { calculateQuoteTotals, type QuotePackageAddon } from "@/services/pricingService";
 
 const PACKAGE_OPTIONS: QuotePackageAddon[] = [
@@ -23,7 +23,17 @@ const PACKAGE_OPTIONS: QuotePackageAddon[] = [
 const VehiclesPage = () => {
   const vehicles = useVehicles();
   const quotes = useQuotes();
-  const leads = useLeads();
+  const leads = useStore(s => s.leads);
+
+  // ⚡ Bolt Performance Optimization: O(1) lead lookups
+  // Bypasses the expensive O(N*M) useLeads() hook and O(N) array .find() on every row
+  const leadsMap = useMemo(() => {
+    const map = new Map();
+    for (const lead of leads) {
+      map.set(lead.id, lead);
+    }
+    return map;
+  }, [leads]);
   const [searchQuery, setSearchQuery] = useState('');
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const [bodyFilter, setBodyFilter] = useState('All');
@@ -325,7 +335,7 @@ const VehiclesPage = () => {
                 </thead>
                 <tbody>
                   {quotes.map((q) => {
-                    const lead = leads.find(l => l.id === q.leadId);
+                    const lead = leadsMap.get(q.leadId);
                     return (
                       <tr key={q.id} className="border-b border-border hover:bg-secondary/20 transition-colors">
                         <td className="px-4 py-3 text-sm font-medium text-gold">{q.quoteNumber}</td>
