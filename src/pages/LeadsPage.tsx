@@ -594,8 +594,20 @@ const LeadsPage = () => {
   const deferredSearchQuery = useDeferredValue(searchQuery);
 
   // Derived counts & filters
-  const hotLeads = useMemo(() => leads.filter((l) => l.priority === "hot"), [leads]);
-  const staleLeads = useMemo(() => leads.filter((l) => l.stage === "stale"), [leads]);
+  // ⚡ Bolt Performance Optimization: Single-pass array reduction
+  // Replaced multiple O(N) array .filter() operations with a single pass O(N) loop
+  // Expected impact: Reduces CPU cycles and memory allocations when processing large lists
+  const { hotLeads, staleLeads } = useMemo(() => {
+    const hot: typeof leads = [];
+    const stale: typeof leads = [];
+    for (let i = 0; i < leads.length; i++) {
+      const lead = leads[i];
+      if (lead.priority === "hot") hot.push(lead);
+      if (lead.stage === "stale") stale.push(lead);
+    }
+    return { hotLeads: hot, staleLeads: stale };
+  }, [leads]);
+
   // ⚡ Bolt Performance Optimization: Single-pass array reduction
   // Replaced multiple O(N) array .filter() operations with a single pass O(N) loop
   // Expected impact: Reduces CPU cycles and memory allocations when processing large lists
