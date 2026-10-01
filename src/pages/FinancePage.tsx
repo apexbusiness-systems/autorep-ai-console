@@ -12,6 +12,9 @@ import {
 import { useFinancePackets, useAuditEvents, useLeads } from "@/hooks/use-store";
 import type { FinancePacket, SupportingDocument } from "@/types/domain";
 
+
+const FINANCE_AUDIT_EVENTS = new Set(['consent_captured', 'disclosure_sent', 'finance_submitted', 'document_received', 'packet_routed']);
+
 const FinancePage = () => {
   const packets = useFinancePackets();
   const auditEvents = useAuditEvents();
@@ -19,7 +22,7 @@ const FinancePage = () => {
   const [expandedPacket, setExpandedPacket] = useState<string | null>(null);
 
   const financeAudits = useMemo(() =>
-    auditEvents.filter(e => ['consent_captured', 'disclosure_sent', 'finance_submitted', 'document_received', 'packet_routed'].includes(e.action)),
+    auditEvents.filter(e => FINANCE_AUDIT_EVENTS.has(e.action)),
   [auditEvents]);
 
   // ⚡ Bolt Performance Optimization: Single-pass array reduction
