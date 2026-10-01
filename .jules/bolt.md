@@ -45,3 +45,6 @@
 ## 2026-05-12 - Date Sorting Performance
 **Learning:** Found that `filtered.sort()` in `src/pages/ConversationsPage.tsx` was doing `new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()`, which forces expensive Date allocations and parsing on every iteration (O(N log N) overhead) for large data structures like ISO 8601 strings.
 **Action:** Always use string lexicographical comparison (`<` and `>`) when sorting standardized timestamp date formats like ISO 8601 to achieve faster sorting and eliminate parsing overhead.
+## 2025-06-03 - Convert array .includes() to Set.has() in frequent loops
+**Learning:** Found multiple instances where large arrays were iterated over and items were checked against static arrays using `.includes()` (e.g., `['active', 'pending'].includes(convo.status)` inside a loop). `Array.includes()` is an O(M) operation, leading to O(N*M) complexity when done inside an O(N) loop.
+**Action:** When checking if a property exists within a static list of allowed values inside a loop or `.filter()` traversal, extract the static list into a `Set` constant declared outside the function. Use `Set.has()`, which provides O(1) lookups, converting the overall operation from O(N*M) to O(N).
