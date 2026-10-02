@@ -25,6 +25,7 @@ import {
   useQuotes,
   useVehicles,
   initiateHandoff,
+  useConversation,
 } from "@/hooks/use-store";
 import type { Conversation, Escalation, Message, Channel } from "@/types/domain";
 import { forecastDemand, suggestDynamicPrice } from "@/services/pricingService";
@@ -424,7 +425,7 @@ function TranscriptReviewPanel({
   onClose: () => void;
 }) {
   const messages = useMessages(conversationId);
-  const conversation = conversations.find((c) => c.id === conversationId);
+  const conversation = useConversation(conversationId);
 
   // Combine inline messages from conversation object and store messages
   const allMessages: Message[] = useMemo(() => {
