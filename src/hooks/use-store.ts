@@ -259,6 +259,33 @@ export function useActiveConversation() {
   });
 }
 
+// ⚡ Bolt Performance Optimization: Direct active conversation selector
+// Selects a single conversation directly from the base store to leverage Zustand's strict equality bailout.
+// Bypasses the O(N) map allocations in `useConversations()` and prevents components
+// from re-rendering whenever ANY conversation or message updates.
+export function useConversation(id: string | null) {
+  const baseConv = useStore(s => id ? s.conversations.find(c => c.id === id) || null : null);
+  const messages = useMessages(id);
+
+  return useMemo(() => {
+    if (!baseConv) return null;
+    const restricted = baseConv.restricted || baseConv.status === 'restricted' || baseConv.optedOut || baseConv.suppressionActive;
+    return {
+      ...baseConv,
+      restricted,
+      restrictionReason: restricted
+        ? baseConv.optedOut
+          ? 'Customer opted out.'
+          : baseConv.suppressionActive
+          ? 'Suppression is active.'
+          : baseConv.restrictionReason || 'Conversation is restricted.'
+        : undefined,
+      summary: summarizeConversation(baseConv, messages),
+      messages,
+    };
+  }, [baseConv, messages]);
+}
+
 const EMPTY_ARRAY: Message[] = [];
 
 export function useMessages(conversationId: string | null) {

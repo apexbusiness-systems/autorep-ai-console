@@ -11,6 +11,7 @@ import {
   setActiveConversation,
   addMessage,
   updateConversationStatus,
+  useConversation,
 } from "@/hooks/use-store";
 import {
   Phone,
@@ -741,10 +742,7 @@ const ConversationsPage = () => {
 
   const [channelFilter, setChannelFilter] = useState("all");
 
-  const selectedConversation = useMemo(
-    () => conversations.find((c) => c.id === selectedConversationId) || null,
-    [conversations, selectedConversationId]
-  );
+  const selectedConversation = useConversation(selectedConversationId);
 
   // ⚡ Bolt Performance Optimization: Single-pass array reduction
   // Replaced multiple chained .filter() operations with a single pass to prevent redundant O(N) traversals and intermediate array allocations.

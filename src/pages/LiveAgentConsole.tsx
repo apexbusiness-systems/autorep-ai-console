@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import {
   useConversations, useMessages, useVehicles, useStore,
-  setActiveConversation, addMessage, useQuotes,
+  setActiveConversation, addMessage, useQuotes, useConversation,
 } from "@/hooks/use-store";
 import type { Message, Channel } from "@/types/domain";
 
@@ -57,9 +57,7 @@ const LiveAgentConsole = () => {
   const [isCompactLayout, setIsCompactLayout] = useState(false);
   const autoReplyTimeout = useRef<number | null>(null);
 
-  const activeConv = useMemo(() =>
-    conversations.find(c => c.id === activeConvId) || null,
-  [conversations, activeConvId]);
+  const activeConv = useConversation(activeConvId);
 
   // ⚡ Bolt Performance Optimization: Direct store lookup for active lead
   // Bypasses the expensive O(N*M) `useLeads` hook which recalculates scores for all leads
