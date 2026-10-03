@@ -45,3 +45,6 @@
 ## 2026-05-12 - Date Sorting Performance
 **Learning:** Found that `filtered.sort()` in `src/pages/ConversationsPage.tsx` was doing `new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()`, which forces expensive Date allocations and parsing on every iteration (O(N log N) overhead) for large data structures like ISO 8601 strings.
 **Action:** Always use string lexicographical comparison (`<` and `>`) when sorting standardized timestamp date formats like ISO 8601 to achieve faster sorting and eliminate parsing overhead.
+## 2026-10-03 - O(N*M) Dictionary state lookups inside map render loops
+**Learning:** Found that `FinancePage` and `VehiclesPage` were performing `.find()` operations inside `.map()` render loops (`leads.find(l => l.id === leadId)`), causing O(N*M) time complexity whenever large lists needed to render linked data. This leads to redundant array traversals on every render.
+**Action:** Always extract inner loop `.find()` lookups by pre-computing a fast O(1) Dictionary `Map` outside the render loop using `useMemo` (e.g. `leadMap.set(lead.id, lead)`).
