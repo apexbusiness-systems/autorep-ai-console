@@ -45,6 +45,16 @@ const VehiclesPage = () => {
 
   // ⚡ Bolt Performance Optimization: Single-pass array reduction
   // Replaced multiple chained .filter() operations with a single pass to prevent redundant O(N) traversals and intermediate array allocations.
+  // ⚡ Bolt Performance Optimization: O(1) Map lookup for lead names
+  // Prevents O(N*M) traversal when rendering quotes list by precomputing a Map of lead names.
+  const leadNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (let i = 0; i < leads.length; i++) {
+      map.set(leads[i].id, leads[i].name);
+    }
+    return map;
+  }, [leads]);
+
   const filtered = useMemo(() => {
     let q = '';
     if (deferredSearchQuery) {
@@ -325,11 +335,11 @@ const VehiclesPage = () => {
                 </thead>
                 <tbody>
                   {quotes.map((q) => {
-                    const lead = leads.find(l => l.id === q.leadId);
+                    const leadName = leadNameMap.get(q.leadId);
                     return (
                       <tr key={q.id} className="border-b border-border hover:bg-secondary/20 transition-colors">
                         <td className="px-4 py-3 text-sm font-medium text-gold">{q.quoteNumber}</td>
-                        <td className="px-4 py-3 text-sm text-foreground">{lead?.name || '—'}</td>
+                        <td className="px-4 py-3 text-sm text-foreground">{leadName || '—'}</td>
                         <td className="px-4 py-3 text-xs text-muted-foreground">{q.scenarios.map(s => s.vehicleSummary).join(' vs ')}</td>
                         <td className="px-4 py-3 text-xs text-muted-foreground">{new Date(q.createdAt).toLocaleDateString()}</td>
                         <td className="px-4 py-3 text-xs text-muted-foreground flex items-center gap-1"><History className="w-3 h-3" /> v{q.revision}</td>

@@ -42,7 +42,17 @@ const FinancePage = () => {
     return { active, awaitingConsent, ready, submitted };
   }, [packets]);
 
-  const getLeadName = (leadId: string) => leads.find(l => l.id === leadId)?.name || 'Unknown';
+  // ⚡ Bolt Performance Optimization: O(1) Map lookup for lead names
+  // Prevents O(N*M) traversal when rendering packets lists by precomputing a Map of lead names.
+  const leadNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (let i = 0; i < leads.length; i++) {
+      map.set(leads[i].id, leads[i].name);
+    }
+    return map;
+  }, [leads]);
+
+  const getLeadName = (leadId: string) => leadNameMap.get(leadId) || 'Unknown';
 
   return (
     <AppLayout>

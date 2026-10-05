@@ -45,3 +45,6 @@
 ## 2026-05-12 - Date Sorting Performance
 **Learning:** Found that `filtered.sort()` in `src/pages/ConversationsPage.tsx` was doing `new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()`, which forces expensive Date allocations and parsing on every iteration (O(N log N) overhead) for large data structures like ISO 8601 strings.
 **Action:** Always use string lexicographical comparison (`<` and `>`) when sorting standardized timestamp date formats like ISO 8601 to achieve faster sorting and eliminate parsing overhead.
+## 2026-06-05 - Avoid O(N*M) Array Traversal in React Render Loops
+**Learning:** Found that rendering lists in `FinancePage.tsx` and `VehiclesPage.tsx` involved `leads.find(l => l.id === leadId)` inside `.map()` render loops. This caused O(N*M) complexity on every render, where M is the list size and N is the number of leads, degrading performance.
+**Action:** When rendering lists in React, avoid using array traversal methods like `.find()` or `.filter()` inside a `.map()` render loop. Instead, pre-compute an O(1) Map of the lookup data outside the loop using `useMemo`, reducing complexity from O(N*M) to O(N + M).
