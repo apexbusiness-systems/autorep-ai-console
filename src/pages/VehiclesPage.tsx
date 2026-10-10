@@ -106,6 +106,17 @@ const VehiclesPage = () => {
   // Prevents recalculating the filtered list on every render
   const availableVehicles = useMemo(() => vehicles.filter(v => v.status === 'available'), [vehicles]);
 
+  // ⚡ Bolt Performance Optimization: O(1) Dictionary Lookup
+  // Replaced O(N) array .find() in a render loop with a pre-computed O(1) Map
+  // Expected impact: Eliminates O(N*M) time complexity during renders where M is quote count
+  const leadMap = useMemo(() => {
+    const map = new Map<string, typeof leads[0]>();
+    for (let i = 0; i < leads.length; i++) {
+      map.set(leads[i].id, leads[i]);
+    }
+    return map;
+  }, [leads]);
+
   return (
     <AppLayout>
       <PageHeader
@@ -325,7 +336,7 @@ const VehiclesPage = () => {
                 </thead>
                 <tbody>
                   {quotes.map((q) => {
-                    const lead = leads.find(l => l.id === q.leadId);
+                    const lead = leadMap.get(q.leadId);
                     return (
                       <tr key={q.id} className="border-b border-border hover:bg-secondary/20 transition-colors">
                         <td className="px-4 py-3 text-sm font-medium text-gold">{q.quoteNumber}</td>
