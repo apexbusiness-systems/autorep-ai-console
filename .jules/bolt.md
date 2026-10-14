@@ -45,3 +45,6 @@
 ## 2026-05-12 - Date Sorting Performance
 **Learning:** Found that `filtered.sort()` in `src/pages/ConversationsPage.tsx` was doing `new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()`, which forces expensive Date allocations and parsing on every iteration (O(N log N) overhead) for large data structures like ISO 8601 strings.
 **Action:** Always use string lexicographical comparison (`<` and `>`) when sorting standardized timestamp date formats like ISO 8601 to achieve faster sorting and eliminate parsing overhead.
+## 2026-10-14 - Set membership checks for inline arrays
+**Learning:** Found several places where inline arrays and `.includes()` were being evaluated inside loops or `.filter()` iterations (e.g. `['status_a', 'status_b'].includes(item.status)`). This causes redundant array allocations and O(N) linear searches on each loop iteration, dragging down performance for large datasets.
+**Action:** Extract inline arrays used for membership checks inside loops into static `Set` constants defined outside the function/component, and use `.has()` instead of `.includes()`. This achieves O(1) lookup complexity and prevents redundant memory allocations.
