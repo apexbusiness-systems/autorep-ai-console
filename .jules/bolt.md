@@ -45,3 +45,6 @@
 ## 2026-05-12 - Date Sorting Performance
 **Learning:** Found that `filtered.sort()` in `src/pages/ConversationsPage.tsx` was doing `new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()`, which forces expensive Date allocations and parsing on every iteration (O(N log N) overhead) for large data structures like ISO 8601 strings.
 **Action:** Always use string lexicographical comparison (`<` and `>`) when sorting standardized timestamp date formats like ISO 8601 to achieve faster sorting and eliminate parsing overhead.
+## 2026-05-15 - Extract invariant variable transformations from inside `.filter()` blocks
+**Learning:** Found that `inventory-search.ts` was chaining multiple `.filter()` operations, with redundant property transformations (like `toLowerCase()`) applied inside the iterative callback block.
+**Action:** When applying multiple filter criteria, hoist invariant expressions (like converting user input to lowercase) out of the iteration block and replace chained `.filter()` operations with a single pass to eliminate O(N) creation of intermediate arrays and repeated unnecessary function evaluation.
