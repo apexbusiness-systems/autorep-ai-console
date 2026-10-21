@@ -45,3 +45,6 @@
 ## 2026-05-12 - Date Sorting Performance
 **Learning:** Found that `filtered.sort()` in `src/pages/ConversationsPage.tsx` was doing `new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()`, which forces expensive Date allocations and parsing on every iteration (O(N log N) overhead) for large data structures like ISO 8601 strings.
 **Action:** Always use string lexicographical comparison (`<` and `>`) when sorting standardized timestamp date formats like ISO 8601 to achieve faster sorting and eliminate parsing overhead.
+## 2026-06-13 - Single-pass array reduction instead of multiple .forEach() calls
+**Learning:** Found multiple instances in `ManagerPage.tsx` where `.forEach()` was being used to iterate over large arrays (like `leads`, `conversations`, `quotes`) to compute aggregates (`funnelData`, `sourceData`, `sentimentData`, `revenuePipeline`). Because `.forEach()` allocates an iterator callback for every element, this adds up when there are many such calls.
+**Action:** Replaced `.forEach()` with single-pass `for` loops. When multiple derivations are done on the same array (e.g. `funnelData` and `sourceData` on `leads`), combine them into one loop.
