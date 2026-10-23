@@ -42,7 +42,18 @@ const FinancePage = () => {
     return { active, awaitingConsent, ready, submitted };
   }, [packets]);
 
-  const getLeadName = (leadId: string) => leads.find(l => l.id === leadId)?.name || 'Unknown';
+  // ⚡ Bolt Performance Optimization: Pre-computing dictionary map
+  // Replaced O(N) array .find() on every render inside .map() with an O(1) map lookup
+  // Expected impact: Reduces time complexity from O(N*M) to O(N + M) and minimizes CPU usage when rendering large lists
+  const leadNamesMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (let i = 0; i < leads.length; i++) {
+      map.set(leads[i].id, leads[i].name);
+    }
+    return map;
+  }, [leads]);
+
+  const getLeadName = (leadId: string) => leadNamesMap.get(leadId) || 'Unknown';
 
   return (
     <AppLayout>
