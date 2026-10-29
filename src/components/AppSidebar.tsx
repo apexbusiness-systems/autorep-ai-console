@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { ThemeToggle } from "./ThemeToggle";
-import { useConversations, useEscalations, useLeads } from "@/hooks/use-store";
+import { useStore, useEscalations } from "@/hooks/use-store";
 
 const navItems = [
   { to: "/", icon: Headphones, label: "Live Agent" },
@@ -26,9 +26,13 @@ const navItems = [
 
 const AppSidebar = ({ onNavigate }: { onNavigate?: () => void }) => {
   const location = useLocation();
-  const conversations = useConversations();
+
+  // ⚡ Bolt Performance Optimization: Direct store lookups
+  // Bypasses heavily derived Zustand selector hooks (`useConversations` and `useLeads`)
+  // that trigger O(N*M) calculations and re-renders on unrelated store updates.
+  const conversations = useStore(s => s.conversations);
   const escalations = useEscalations();
-  const leads = useLeads();
+  const leads = useStore(s => s.leads);
 
   // ⚡ Bolt Performance Optimization: Combine array traversals
   // Calculate active and unread conversations in a single O(N) pass instead of two separate traversals

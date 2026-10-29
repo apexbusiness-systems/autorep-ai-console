@@ -11,7 +11,7 @@ import {
   ArrowLeftRight, ChevronRight, Link2, Calculator,
   CheckCircle, X, FileText,
 } from "lucide-react";
-import { useVehicles, useQuotes, useLeads } from "@/hooks/use-store";
+import { useStore, useVehicles, useQuotes } from "@/hooks/use-store";
 import { calculateQuoteTotals, type QuotePackageAddon } from "@/services/pricingService";
 
 const PACKAGE_OPTIONS: QuotePackageAddon[] = [
@@ -23,7 +23,10 @@ const PACKAGE_OPTIONS: QuotePackageAddon[] = [
 const VehiclesPage = () => {
   const vehicles = useVehicles();
   const quotes = useQuotes();
-  const leads = useLeads();
+
+  // ⚡ Bolt Performance Optimization: Direct store lookup
+  // Bypasses the expensive O(N*M) `useLeads` hook since we only need the basic name
+  const leads = useStore(s => s.leads);
   const [searchQuery, setSearchQuery] = useState('');
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const [bodyFilter, setBodyFilter] = useState('All');
