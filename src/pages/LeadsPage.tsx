@@ -69,6 +69,8 @@ const TASK_TYPE_LABELS: Record<FollowUpTask["type"], string> = {
   document_request: "Doc Request",
 };
 
+const URGENT_FOLLOW_UP_TYPES = new Set(["callback", "quote_follow_up", "appointment_reminder"]);
+
 const CHANNEL_ICONS: Record<Channel, typeof Phone> = {
   phone: PhoneCall,
   sms: MessageSquare,
@@ -611,7 +613,7 @@ const LeadsPage = () => {
       if (t.status !== "completed" && t.status !== "cancelled") {
         active.push(t);
         if (t.type === "reactivation") reactivation.push(t);
-        if (["callback", "quote_follow_up", "appointment_reminder"].includes(t.type)) {
+        if (URGENT_FOLLOW_UP_TYPES.has(t.type)) {
           proactive.push(t);
         }
       }
