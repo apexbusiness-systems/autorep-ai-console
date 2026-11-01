@@ -45,3 +45,6 @@
 ## 2026-05-12 - Date Sorting Performance
 **Learning:** Found that `filtered.sort()` in `src/pages/ConversationsPage.tsx` was doing `new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()`, which forces expensive Date allocations and parsing on every iteration (O(N log N) overhead) for large data structures like ISO 8601 strings.
 **Action:** Always use string lexicographical comparison (`<` and `>`) when sorting standardized timestamp date formats like ISO 8601 to achieve faster sorting and eliminate parsing overhead.
+## 2026-06-01 - Single-pass array reduction instead of chained .filter().reduce() calls for aggregates
+**Learning:** Found that `calculateQuoteTotals` in `pricingService.ts` was chaining multiple `.filter()` and `.reduce()` operations on the same `input.packages` array to calculate `packages`, `packageTotal`, and `taxablePackageTotal`. This caused multiple O(N) traversals and redundant array allocations for every quote calculation.
+**Action:** Replaced chained `.filter()` and `.reduce()` operations with a single-pass `for...of` loop to categorize and sum items simultaneously. This prevents redundant O(N) array traversals and reduces intermediate memory allocations, making calculations much faster.
