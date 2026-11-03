@@ -42,7 +42,17 @@ const FinancePage = () => {
     return { active, awaitingConsent, ready, submitted };
   }, [packets]);
 
-  const getLeadName = (leadId: string) => leads.find(l => l.id === leadId)?.name || 'Unknown';
+  // ⚡ Bolt Performance Optimization: Extract lookup into O(1) Dictionary Map
+  // Prevents O(N*M) time complexity when rendering lists of packets that look up lead names.
+  const leadsMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const lead of leads) {
+      map.set(lead.id, lead.name);
+    }
+    return map;
+  }, [leads]);
+
+  const getLeadName = (leadId: string) => leadsMap.get(leadId) || 'Unknown';
 
   return (
     <AppLayout>
