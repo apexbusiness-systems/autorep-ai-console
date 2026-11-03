@@ -106,6 +106,16 @@ const VehiclesPage = () => {
   // Prevents recalculating the filtered list on every render
   const availableVehicles = useMemo(() => vehicles.filter(v => v.status === 'available'), [vehicles]);
 
+  // ⚡ Bolt Performance Optimization: Extract lookup into O(1) Dictionary Map
+  // Prevents O(N*M) time complexity when rendering quotes table
+  const leadsMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const lead of leads) {
+      map.set(lead.id, lead.name);
+    }
+    return map;
+  }, [leads]);
+
   return (
     <AppLayout>
       <PageHeader
@@ -325,11 +335,11 @@ const VehiclesPage = () => {
                 </thead>
                 <tbody>
                   {quotes.map((q) => {
-                    const lead = leads.find(l => l.id === q.leadId);
+                    const leadName = leadsMap.get(q.leadId);
                     return (
                       <tr key={q.id} className="border-b border-border hover:bg-secondary/20 transition-colors">
                         <td className="px-4 py-3 text-sm font-medium text-gold">{q.quoteNumber}</td>
-                        <td className="px-4 py-3 text-sm text-foreground">{lead?.name || '—'}</td>
+                        <td className="px-4 py-3 text-sm text-foreground">{leadName || '—'}</td>
                         <td className="px-4 py-3 text-xs text-muted-foreground">{q.scenarios.map(s => s.vehicleSummary).join(' vs ')}</td>
                         <td className="px-4 py-3 text-xs text-muted-foreground">{new Date(q.createdAt).toLocaleDateString()}</td>
                         <td className="px-4 py-3 text-xs text-muted-foreground flex items-center gap-1"><History className="w-3 h-3" /> v{q.revision}</td>
