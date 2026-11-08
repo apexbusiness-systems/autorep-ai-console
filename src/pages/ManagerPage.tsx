@@ -927,24 +927,29 @@ function DashboardCharts() {
   const quotes = useQuotes();
   const vehicles = useVehicles();
 
-  // Lead Stage Funnel Data
-  const funnelData = useMemo(() => {
+  // ⚡ Bolt Performance Optimization: Combine array traversals
+  // Calculate lead stages and sources in a single O(N) pass over the leads array
+  // Expected impact: Halves the time spent calculating derived lead stats on store updates
+  const { funnelData, sourceData } = useMemo(() => {
     const stages: Record<string, number> = {};
-    leads.forEach(l => {
+    const sources: Record<string, number> = {};
+
+    for (let i = 0; i < leads.length; i++) {
+      const l = leads[i];
+
+      // Stage tracking
       const label = stageLabel[l.stage] || l.stage;
       stages[label] = (stages[label] || 0) + 1;
-    });
-    return Object.entries(stages).map(([name, value]) => ({ name, value }));
-  }, [leads]);
 
-  // Lead Source Distribution
-  const sourceData = useMemo(() => {
-    const sources: Record<string, number> = {};
-    leads.forEach(l => {
+      // Source tracking
       const src = l.source?.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'Unknown';
       sources[src] = (sources[src] || 0) + 1;
-    });
-    return Object.entries(sources).map(([name, value]) => ({ name, value }));
+    }
+
+    return {
+      funnelData: Object.entries(stages).map(([name, value]) => ({ name, value })),
+      sourceData: Object.entries(sources).map(([name, value]) => ({ name, value }))
+    };
   }, [leads]);
 
   // ⚡ Bolt Performance Optimization: Single-pass array reduction
