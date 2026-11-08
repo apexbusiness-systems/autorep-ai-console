@@ -45,3 +45,6 @@
 ## 2026-05-12 - Date Sorting Performance
 **Learning:** Found that `filtered.sort()` in `src/pages/ConversationsPage.tsx` was doing `new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()`, which forces expensive Date allocations and parsing on every iteration (O(N log N) overhead) for large data structures like ISO 8601 strings.
 **Action:** Always use string lexicographical comparison (`<` and `>`) when sorting standardized timestamp date formats like ISO 8601 to achieve faster sorting and eliminate parsing overhead.
+## 2026-05-30 - Combined Multiple Object.entries() Mapping
+**Learning:** Found multiple instances where we iterate over the same array multiple times (e.g. `funnelData` and `sourceData`) using `forEach` to build multiple aggregation objects, creating extra O(N) traversals.
+**Action:** When computing multiple derivations from the same state array (like counting stages and sources for chart data), combine them into a single-pass `for` loop inside a single `useMemo` block that returns all derived objects at once. This halves CPU time on store updates.
